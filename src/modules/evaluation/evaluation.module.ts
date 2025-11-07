@@ -1,13 +1,20 @@
 import { Module } from '@nestjs/common';
-import { EvaluationController } from './evaluation.controller';
 import { EvaluationService } from './evaluation.service';
 import { ExtractorModule } from './extractor/extractor.module';
-import { AgentModule } from './agent/agent.module';
-import { WebsocketGateway } from './websocket.gateway';
+import { EvaluationController } from './evaluation.controller';
+import { AgentModule } from '../agent/agent.module';
+import { MongodbModule } from '../database/mongodb/mongodb.module';
+import { ChromaDbModule } from '../database/chromadb/chromadb.module';
 
 @Module({
-  imports: [ExtractorModule, AgentModule],
+  imports: [
+    ExtractorModule,
+    AgentModule,
+    MongodbModule,
+    ChromaDbModule
+  ],
+  providers: [EvaluationService],
   controllers: [EvaluationController],
-  providers: [EvaluationService, WebsocketGateway],
+  exports: [EvaluationService]
 })
 export class EvaluationModule { }
