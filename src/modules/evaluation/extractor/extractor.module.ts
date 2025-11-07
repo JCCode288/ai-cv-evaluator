@@ -4,4 +4,4 @@ import { ExtractorService } from './extractor.service';
 @Module({
   providers: [ExtractorService]
 })
-export class ExtractorModule {}
+export class ExtractorModule { }
