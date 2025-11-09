@@ -1,11 +1,9 @@
-export interface AgentOutput {
-
+export interface ChatHistory {
+    role: 'ai' | 'human';
+    content: string;
 }
 
 export interface AgentInput {
-
-}
-
-export interface AgentStrategy {
-    chat(input: AgentInput): AgentOutput;
+    input: string;
+    history: ChatHistory[];
 }

@@ -1,18 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, UseGuards } from '@nestjs/common';
 import { JobDescriptionService } from './job-description.service';
 import { CreateJobDescriptionDto } from './dto/create-job-description.dto';
 import { UpdateJobDescriptionDto } from './dto/update-job-description.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('job-description')
+@UseGuards(JwtAuthGuard)
 export class JobDescriptionController {
   constructor(private readonly jobDescriptionService: JobDescriptionService) { }
 
-  @Post()
+  @Post("/")
   create(@Body() createJobDescriptionDto: CreateJobDescriptionDto) {
     return this.jobDescriptionService.create(createJobDescriptionDto);
   }
 
-  @Get()
+  @Get("/")
   findAll(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10
