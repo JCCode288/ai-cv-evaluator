@@ -5,13 +5,15 @@ import { EvaluationController } from './evaluation.controller';
 import { AgentModule } from '../agent/agent.module';
 import { MongodbModule } from '../database/mongodb/mongodb.module';
 import { ChromaDbModule } from '../database/chromadb/chromadb.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
     ExtractorModule,
     AgentModule,
     MongodbModule,
-    ChromaDbModule
+    ChromaDbModule,
+    StorageModule
   ],
   providers: [EvaluationService],
   controllers: [EvaluationController],
