@@ -1,24 +1,31 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { User } from './user.schema';
-import { CV } from './cv.schema';
+import { CVResult } from './cv-result.schema';
+import { JobDescription } from './job-description.schema';
 
 @Schema()
 export class Chat extends Document {
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-    user: User;
+    @Prop({ required: true })
+    update_id: number;
 
     @Prop({ required: true })
-    update_id?: number;
+    chat_id: number;
 
     @Prop({ required: true })
-    message: string;
+    message_id: number;
 
     @Prop({ required: true })
-    type: "human" | "ai";
+    content: string;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "CV" })
-    context?: CV;
+    @Prop({ required: true })
+    type: "human" | "ai" | "system";
+
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "CVResult" })
+    result_context?: CVResult;
+
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "JobDescription" })
+    job_desc_context?: JobDescription;
 
     @Prop({ required: true, default: new Date() })
     created_at: Date;
@@ -28,3 +35,5 @@ export class Chat extends Document {
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);
+
+ChatSchema.index({ chat_id: 1, message_id: 1, update_id: 1 }, { unique: true });

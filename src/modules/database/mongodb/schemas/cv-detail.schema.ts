@@ -13,9 +13,6 @@ export class CVDetail extends Document {
     @Prop({ type: [String], default: [] })
     texts: string[];
 
-    @Prop({ required: true })
-    vector_id: string;
-
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'CV', required: true })
     CV: CV;
 
@@ -27,5 +24,3 @@ export class CVDetail extends Document {
 }
 
 export const CVDetailSchema = SchemaFactory.createForClass(CVDetail);
-
-CVDetailSchema.index({ CV: 1, page: 1, vector_id: 1 }, { unique: true });

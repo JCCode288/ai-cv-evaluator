@@ -1,5 +1,5 @@
 export interface ChatHistory {
-    role: 'ai' | 'human';
+    type: 'ai' | 'human' | 'system';
     content: string;
 }
 
