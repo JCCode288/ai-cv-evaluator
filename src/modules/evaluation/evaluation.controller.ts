@@ -1,25 +1,72 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { EvaluationService } from './evaluation.service';
 import { EvaluateDto } from './dto/evaluate.dto';
-import { UploadCvDto } from './dto/upload-cv.dto';
 import { CvResultDto } from './dto/cv-result.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User } from '../database/mongodb/schemas';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { pdfFilter } from 'src/utils/pdf-mime.filter';
+import { Types } from 'mongoose';
 
 @Controller('evaluate')
+@UseGuards(JwtAuthGuard)
 export class EvaluationController {
     constructor(private readonly evaluationService: EvaluationService) { }
 
+    @Get("/")
+    evaluationList(@GetUser() user: any) {
+        return this.evaluationService.evaluationList(user.userId);
+    }
+
     @Post("/")
-    evaluate(@Body() evaluateDto: EvaluateDto) {
-        return this.evaluationService.evaluate(evaluateDto);
+    evaluate(@Body() evaluateDto: EvaluateDto, @GetUser() user: any) {
+        return this.evaluationService.evaluate(
+            evaluateDto,
+            user.userId
+        );
+    }
+
+    @Get("/upload")
+    cvList(@GetUser() user: any) {
+        return this.evaluationService.uploadedList(user.userId);
     }
 
     @Post('upload')
-    uploadCV(@Body() uploadCvDto: UploadCvDto) {
-        return this.evaluationService.uploadCV(uploadCvDto);
+    @UseInterceptors(FileFieldsInterceptor([
+        { name: 'cv', maxCount: 1 },
+        { name: 'project', maxCount: 1 },
+    ], {
+        fileFilter: pdfFilter
+    }))
+    uploadCV(
+        @UploadedFiles() files: { cv?: Express.Multer.File[], project?: Express.Multer.File[] },
+        @GetUser() user: any
+    ) {
+        const cv = files.cv?.[0];
+        const project = files.project?.[0];
+
+        if (!cv) throw new BadRequestException("CV is not included");
+        if (!project) throw new BadRequestException("CV is not included");
+
+        return this.evaluationService.uploadCV(
+            { cv, project },
+            user.userId
+        );
     }
 
-    @Post(":id/result")
-    result(@Param("id") cvId: string, @Body() cvResultDto: CvResultDto) {
-        return this.evaluationService.saveResult(cvId, cvResultDto);
+    @Get("/:id/result")
+    result(@Param("id") cvResultId: string) {
+        if (!Types.ObjectId.isValid(cvResultId))
+            throw new BadRequestException("Invalid Id");
+
+        return this.evaluationService.getResultById(cvResultId);
+    }
+
+    @Get("/query")
+    query(@Query("text") searchQuery: string) {
+        if (!searchQuery) return [];
+
+        return this.evaluationService.query(searchQuery);
     }
 }

@@ -1,10 +1,15 @@
 import { Injectable } from "@nestjs/common";
-import { AgentStrategy } from "../interfaces/agent.interface";
-import { RagInput, RagOutput } from "../interfaces/rag.interface";
+import { AgentStrategy } from "../interfaces/agent.strategy";
+import { RagInput } from "../interfaces/rag.interface";
 
 @Injectable()
 export class RagAgent implements AgentStrategy {
-    chat(input: RagInput): RagOutput {
+    private readonly graph;
+    chat(input: RagInput) {
         return {};
+    }
+
+    init() {
+
     }
 }

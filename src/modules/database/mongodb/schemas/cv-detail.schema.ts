@@ -10,11 +10,20 @@ export class CVDetail extends Document {
     @Prop({ required: true })
     base64_image: string;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'CV', required: true })
-    CV: CV;
+    @Prop({ type: [String], default: [] })
+    texts: string[];
 
     @Prop({ required: true })
     vector_id: string;
+
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'CV', required: true })
+    CV: CV;
+
+    @Prop({ required: true, default: new Date() })
+    created_at: Date;
+
+    @Prop({ required: true, default: new Date() })
+    updated_at: Date;
 }
 
 export const CVDetailSchema = SchemaFactory.createForClass(CVDetail);

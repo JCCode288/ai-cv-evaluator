@@ -13,3 +13,5 @@ export const SCHEMAS = [
     { name: CVResult.name, schema: CVResultSchema },
     { name: JobDescription.name, schema: JobDescriptionSchema }
 ];
+
+export * from './user.schema';

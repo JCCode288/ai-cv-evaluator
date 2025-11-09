@@ -4,17 +4,23 @@ import { Chat } from './chat.schema';
 
 @Schema()
 export class User extends Document {
-  @Prop({ required: true })
-  name: string;
+  @Prop({ required: true, index: true })
+  username: string;
 
   @Prop({ default: "" })
   summary: string;
 
-  @Prop({ required: true, index: true })
-  email: string;
+  @Prop({ unique: true })
+  email?: string;
 
-  @Prop({ required: true, index: true })
-  telegram_id: string;
+  @Prop()
+  password?: string;
+
+  @Prop()
+  hashedRefreshToken?: string;
+
+  @Prop({ index: true })
+  telegram_id?: string;
 
   @Prop({ required: true, default: new Date() })
   created_at: Date;
@@ -30,3 +36,5 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.index({ email: 1, username: 1 }, { unique: true });
