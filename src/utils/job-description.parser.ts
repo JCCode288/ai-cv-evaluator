@@ -2,6 +2,7 @@ import { JobDescription } from "src/modules/database/mongodb/schemas/job-descrip
 
 export function jobDescriptionParser(jobDescription: JobDescription) {
     const job_descriptions = `
+## ${jobDescription.title}
 ### Descriptions
 ${jobDescription.description}
 ### Requirements

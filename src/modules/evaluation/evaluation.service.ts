@@ -260,42 +260,47 @@ export class EvaluationService implements OnModuleInit {
 
         for (let i = 0; i < extractedCv.pages.length; i++) {
             const page = extractedCv.pages[i];
-            const id = `${cvResult._id}_${page.pageNumber}_cv`;
-            const pageText = page.texts.join("\n\n");
-            const metadata = { cv_result_id: cvResult._id.toString(), doc_type: 'cv' };
-
-            ids.push(id);
-            documents.push(pageText);
-            metadatas.push(metadata);
 
             const cvDetail = new this.cvDetailModel({
                 page: page.pageNumber,
                 base64_image: page.image,
                 texts: page.texts,
-                vector_id: id,
                 CV: cvResult.CV._id
             });
             cvDetails.push(cvDetail);
+
+            const pageText = page.texts.join("\n\n");
+            const metadata = {
+                cv_result_id: cvResult._id.toString(),
+                cv_detail_id: (cvDetail._id as any).toString(),
+                doc_type: 'cv'
+            };
+
+            documents.push(pageText);
+            metadatas.push(metadata);
+            ids.push((cvDetail._id as any).toString());
         }
 
         for (let i = 0; i < extractedProject.pages.length; i++) {
             const page = extractedProject.pages[i];
-            const id = `${cvResult._id}_${page.pageNumber}_project`;
-            const pageText = page.texts.join("\n\n");
-            const metadata = { cv_result_id: cvResult._id.toString(), doc_type: 'project' };
-
-            ids.push(id);
-            documents.push(pageText);
-            metadatas.push(metadata);
-
             const cvDetail = new this.cvDetailModel({
                 page: page.pageNumber,
                 base64_image: page.image,
                 texts: page.texts,
-                vector_id: id,
                 CV: cvResult.CV._id
             });
             cvDetails.push(cvDetail);
+
+            const pageText = page.texts.join("\n\n");
+            const metadata = {
+                cv_result_id: cvResult._id.toString(),
+                cv_detail_id: (cvDetail._id as any).toString(),
+                doc_type: 'project'
+            };
+
+            documents.push(pageText);
+            metadatas.push(metadata);
+            ids.push((cvDetail._id as any).toString());
         }
 
         const payload = {

@@ -5,7 +5,6 @@ import { ExtractorInput } from "../interfaces/extractor.interface";
 import { ExtractorState } from "./extractor.state";
 import { EXTRACTOR_PROMPT } from "./extractor.prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import { EXTRACTOR_OUTPUT } from "./extractor.output";
 import { z } from "zod";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
@@ -71,12 +70,6 @@ export class ExtractorAgent implements AgentStrategy {
             apiKey,
             model: modelName,
             temperature,
-            safetySettings: [
-                {
-                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-                },
-            ],
             ...configs,
         })
     }
