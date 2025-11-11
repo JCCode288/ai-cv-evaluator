@@ -4,8 +4,8 @@
 AI CV Evaluator Solution Document
 
 ## 2. Candidate Information
-*   Full Name: [Your Full Name]
-*   Email Address: [Your Email Address]
+*   Full Name: Jendy Caprico
+*   Email Address: jendycaprico@gmail.com
 
 ## 3. Repository Link
 *   Provide a link to your GitHub repository: [Your GitHub Repository Link]
