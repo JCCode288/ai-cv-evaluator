@@ -12,9 +12,9 @@ import { CVStatusEnum } from 'src/utils/cv-status.enum';
 import { ChromaClient, Collection } from 'chromadb';
 import { IExtractedDocument } from './extractor/interfaces/extractor.interfaces';
 import { ExtractorAgent } from '../agent/extractor/extractor.agent';
-import { jobDescriptionParser } from 'src/utils/job-description.parser';
 import { GoogleGeminiEmbeddingFunction } from '@chroma-core/google-gemini';
 import { CVDetail } from '../database/mongodb/schemas/cv-detail.schema';
+import { getJobParser } from 'src/utils/tool.parser';
 
 @Injectable()
 export class EvaluationService implements OnModuleInit {
@@ -237,7 +237,7 @@ export class EvaluationService implements OnModuleInit {
             documents,
             metadatas
         };
-        const result = await this.collection.add(payload);
+        await this.collection.upsert(payload);
 
         return payload;
     }
@@ -309,8 +309,8 @@ export class EvaluationService implements OnModuleInit {
             metadatas
         };
 
-        await Promise.all([
-            this.collectionRag.add(payload),
+        const results = await Promise.allSettled([
+            this.collectionRag.upsert(payload),
             this.cvDetailModel.bulkSave(cvDetails)
         ]);
 
@@ -322,7 +322,7 @@ export class EvaluationService implements OnModuleInit {
         extractedCv: IExtractedDocument,
         extractedProject: IExtractedDocument
     ) {
-        const job_descriptions = jobDescriptionParser(jobDescription);
+        const job_descriptions = getJobParser(jobDescription);
         const stringified_cv = extractedCv.fullText;
         const stringified_project = extractedProject.fullText;
         const cv_images = extractedCv.pages.reduce((prev: string[], page) => {
@@ -348,15 +348,6 @@ export class EvaluationService implements OnModuleInit {
         });
 
         return stateResult.output;
-    }
-
-    query(query: string) {
-        if (!query) return [];
-
-        return this.collection.query({
-            queryTexts: [query],
-            nResults: 10
-        });
     }
 
     async getResultById(cvResultId: string) {

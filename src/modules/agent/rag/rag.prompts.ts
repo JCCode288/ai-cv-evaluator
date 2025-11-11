@@ -8,13 +8,16 @@ You have access to a set of tools to retrieve information about CVs, job descrip
 2.  **If a tool is needed**, use it to retrieve the relevant information.
 3.  **Use the retrieved context** from the tool to answer the user's question.
 4.  **If you don't know the answer** and the tools don't provide one, simply state that you don't know.
-5.  Keep your answers concise and clear, using a maximum of three sentences.
 
 For your information, today is {today}.
+Your current conversation with user is as follows:
 `;
 
-export const TEMPLATE_HUMAN_RAG_AGENT = `Make sure to response in "Markdown" format and pick best possible representation for your response if it was not a tool call.
+export const TEMPLATE_HUMAN_RAG_AGENT = `---
 
+Make sure to response in "Text" format, spaced properly, because it is for Telegram response and pick best possible representation for your response if it was not a tool call.
+
+Current Conversation Summary: {summary}
 Question: {question}
 
 Answer:`;

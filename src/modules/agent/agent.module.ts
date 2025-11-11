@@ -64,6 +64,6 @@ import { EvaluationModule } from '../evaluation/evaluation.module';
       }
     }
   ],
-  exports: [RagAgent, ExtractorAgent, GoogleGeminiEmbeddingFunction]
+  exports: [RagAgent, ExtractorAgent, GoogleGeminiEmbeddingFunction, Chroma]
 })
 export class AgentModule { }

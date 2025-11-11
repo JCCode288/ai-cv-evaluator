@@ -23,17 +23,16 @@ export class TelegramService {
     ) { }
 
     async handleUpdate(update: Update) {
+        this.logger.log('Received update from Telegram:', update);
+
+        const message = update.message;
+        if (!message || !message.text) return { status: "ok" };
+
+        const chatId = message.chat.id;
+        const messageId = message.message_id;
+        const updateId = update.update_id;
+
         try {
-            this.logger.log('Received update from Telegram:', update);
-            const message = update.message;
-
-            if (!message || !message.text) return { status: "ok" };
-
-            const chatId = message.chat.id;
-            const messageId = message.message_id;
-            const updateId = update.update_id;
-            const parseMode = "Markdown";
-
             if (!message.from?.username)
                 return await this.sendMessage({
                     chat_id: chatId,
@@ -49,11 +48,11 @@ export class TelegramService {
                     },
                 },
                 { upsert: true, new: true },
-            ).populate({ path: 'chats', options: { sort: { update_id: 1, type: -1 } } }).exec();
+            ).populate({ path: 'chats', options: { sort: { update_id: 1, type: -1 }, limit: 20 } }).exec();
 
             const history = user?.chats;
 
-            const input = message.text?.replaceAll('/', '');
+            const input = message.text;
             const text = await this.ragAgent.chat({
                 chat_id: chatId,
                 message_id: messageId,
@@ -68,11 +67,16 @@ export class TelegramService {
                     text: "I am sorry, there's something wrong with me. Please try again in 5 minutes",
                 });
 
-            await this.sendMessage({ chat_id: chatId, text, parse_mode: parseMode });
+            await this.sendMessage({ chat_id: chatId, text });
 
             return { status: 'ok' };
         } catch (err) {
             // this.logger.error("Failed to handle update from telegram:", err);
+            await this.sendMessage({
+                chat_id: chatId,
+                text: "I am sorry, there's something wrong with me. Please try again in 5 minutes",
+            });
+
             return { status: 'failed' }
         }
     }

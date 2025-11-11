@@ -7,24 +7,28 @@ import { Model } from "mongoose";
 import { CVResult } from "src/modules/database/mongodb/schemas/cv-result.schema";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
-import { DynamicTool } from "@langchain/core/tools";
+import { DynamicStructuredTool, DynamicTool } from "@langchain/core/tools";
 import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { jobDescriptionParser } from "src/utils/job-description.parser";
 import { CompiledStateGraph, END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
 import { RagState, RagStateType } from "./rag.state";
 import { RAG_HUMAN_PROMPT, RAG_SYSTEM_PROMPT } from "./rag.prompts";
 import { AIMessage, HumanMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
 import { Chat } from "src/modules/database/mongodb/schemas/chat.schema";
+import { GetCvResultsSchema, GetListJobDescSchema } from "./rag-tool.schema";
+import { getCvDetailParser, getCvResultParser, getCvResultsParser, getJobParser, getListJobParser, searchVectorStoreParser } from "src/utils/tool.parser";
+import { CVDetail } from "src/modules/database/mongodb/schemas/cv-detail.schema";
 
 @Injectable()
 export class RagAgent implements AgentStrategy, OnModuleInit {
-    private tools: DynamicTool[];
+    private tools: (DynamicTool | DynamicStructuredTool)[];
+    private toolMap: Map<string, (DynamicTool | DynamicStructuredTool)> = new Map();
     private graph: CompiledStateGraph<any, any, any, any, any, any, any, any, any>;
     private readonly logger = new Logger(RagAgent.name);
 
     constructor(
         @InjectModel(JobDescription.name) private readonly jobDescriptionModel: Model<JobDescription>,
         @InjectModel(CVResult.name) private readonly cvResultModel: Model<CVResult>,
+        @InjectModel(CVDetail.name) private readonly cvDetailModel: Model<CVDetail>,
         @InjectModel(Chat.name) private readonly chatModel: Model<Chat>,
         private readonly collection: Chroma,
     ) { }
@@ -48,7 +52,6 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 configurable: { thread_id: input.chat_id },
                 recursionLimit: 50
             };
-            console.log(config);
             const chat = new this.chatModel({
                 chat_id: input.chat_id,
                 update_id: input.update_id,
@@ -67,7 +70,10 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 message_id: input.message_id
             }, config);
 
-            const chatResponse = result.agentResponse?.content;
+            let chatResponse = result.agentResponse?.content;
+            if (typeof chatResponse !== 'string') {
+                chatResponse = JSON.stringify(chatResponse);
+            }
 
             const aiChat = new this.chatModel({
                 chat_id: input.chat_id,
@@ -90,30 +96,28 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const history = state.history.map(hist => {
             if (hist.type === 'ai')
                 return new AIMessage({ content: hist.content });
+
             if (hist.type === 'human')
                 return new HumanMessage({ content: hist.content });
+
             return new SystemMessage({ content: hist.content });
         });
 
         const question = state.input;
+        const summary = state.summary;
         state.agentResponse = null;
 
         const [systemPrompt, humanPrompt] = await Promise.all([
             RAG_SYSTEM_PROMPT.format({ today: new Date().toLocaleString() }),
-            RAG_HUMAN_PROMPT.format({ question })
+            RAG_HUMAN_PROMPT.format({ question, summary })
         ]);
 
-        console.log({ messages: state.messages });
-        if (!state.messages?.length)
-            state.messages = [
-                systemPrompt,
-                ...history,
-                humanPrompt
-            ];
-
-        console.log({ messages: state.messages });
         const agent = this.buildAgent();
-        const messages = state.messages;
+        const messages = [
+            systemPrompt,
+            ...history,
+            humanPrompt
+        ];
         const response = await agent.invoke(messages);
 
         state.agentResponse = response;
@@ -130,24 +134,30 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
         const toolMessages = await Promise.all(
             agentResponse.tool_calls.map(async (toolCall) => {
-                const tool = this.tools.find((t) => t.name === toolCall.name);
-                let output;
+                const tool = this.toolMap.get(toolCall.name);
+
                 if (!tool) {
-                    output = `Tool ${toolCall.name} not found`;
-                    this.logger.warn(output);
-                } else {
-                    try {
-                        output = await tool.invoke(toolCall.args);
-                    } catch (error) {
-                        output = `Error executing tool ${toolCall.name}: ${error.message}`;
-                        this.logger.error(output, error);
-                    }
+                    this.logger.warn(`=== Tool not found: ${toolCall.name} ===`);
+                    return `Tool ${toolCall.name} not found`;
                 }
 
-                return new ToolMessage({
-                    content: typeof output === 'string' ? output : JSON.stringify(output),
-                    tool_call_id: toolCall.id,
-                });
+                try {
+                    const output = await tool.invoke(toolCall.args);
+                    this.logger.log(`=== Tool Call succeed: ${toolCall.name} ===`, output);
+
+                    return new ToolMessage({
+                        content: typeof output === 'string' ? output : JSON.stringify(output),
+                        tool_call_id: toolCall.id,
+                    });
+                } catch (error) {
+                    const output = `Error executing tool ${toolCall.name}: ${error.message}`;
+                    this.logger.error(output, error);
+
+                    return new ToolMessage({
+                        content: typeof output === 'string' ? output : JSON.stringify(output),
+                        tool_call_id: toolCall.id,
+                    });
+                }
             })
         );
 
@@ -206,47 +216,42 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
     private createTools() {
         const searchVectorStore = new DynamicTool({
             name: "search_vector_store",
-            description: "Searches the vector store for relevant information about CVs and projects based on a query string.",
+            description: "Searches the vector store for relevant information about CVs and projects only based on a query string.",
             func: async (input: string) => {
                 this.logger.log("=== searching vector ===");
                 try {
                     const results = await this.collection.similaritySearch(input);
-                    return results;
+                    return searchVectorStoreParser(results);
                 } catch (err) {
                     return err;
                 }
             },
         });
+        this.toolMap.set(searchVectorStore.name, searchVectorStore);
 
-        const getListJobDescriptions = new DynamicTool({
+        const getListJobDescriptions = new DynamicStructuredTool({
             name: "get_job_listing",
-            description: "Retrieves list of job posting",
-            func: async () => {
+            description: "Retrieves a list of available job descriptions, including their titles and brief descriptions.",
+            schema: GetListJobDescSchema,
+            func: async (input) => {
                 this.logger.log("=== getting job listing ===");
                 try {
                     const fields = {
                         title: 1,
-                        created_at: 1,
-                        updated_at: 1
+                        description: 1
                     };
 
-                    const jobs = await this.jobDescriptionModel.find({}, fields).exec();
-                    this.logger.log("=== job listing ===");
-                    this.logger.log(jobs);
+                    const jobs = await this.jobDescriptionModel.find(input.query, fields).exec();
 
-                    if (!jobs.length) return "No job listing found in database";
-
-                    return jobs.map(job => {
-                        const jobString = `## ${job.title}[id=${job._id}]\n### Dates\n- Created at: ${job.created_at}\n- Updated at: ${job.updated_at}`;
-
-                        return jobString;
-                    }).join("\n\n");
+                    return getListJobParser(jobs);
                 } catch (err) {
                     this.logger.error("Failed to getting list job", err);
                     return `Error getting job listing: ${err.message}`;
                 }
             }
         });
+        this.toolMap.set(getListJobDescriptions.name, getListJobDescriptions);
+
         const getJobDescription = new DynamicTool({
             name: "get_job_description_by_id",
             description: "Retrieves a specific job description by its ID.",
@@ -257,40 +262,84 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
                     if (!job) return "Job description not found.";
 
-                    const jobString = jobDescriptionParser(job);
-                    return jobString;
+                    return getJobParser(job);
                 } catch (err) {
                     this.logger.error("Failed to getting job desc: ", err);
                     return `Error getting job description: ${err.message}`;
                 }
             },
         });
+        this.toolMap.set(getJobDescription.name, getJobDescription);
+
+        const getCvResults = new DynamicStructuredTool({
+            name: 'get_cv_result_list',
+            description: "Retrieves a list of CV evaluation summaries, including their status, match rates, and overall scores.",
+            schema: GetCvResultsSchema,
+            func: async (input) => {
+                this.logger.log("=== getting cv result list ===");
+                try {
+                    const fields = {
+                        status: 1,
+                        CV: 1,
+                        created_at: 1,
+                        updated_at: 1
+                    };
+                    const cvFields = {
+                        cv_filename: 1,
+                        project_filename: 1,
+                    };
+                    const results = await this.cvResultModel.find(input.query, fields).populate({ path: 'CV', options: { fields: cvFields } });
+
+                    return getCvResultsParser(results);
+                } catch (err) {
+                    this.logger.error("=== Failed to retrieve cv result list ===");
+                    return `Error getting CV result list: ${err.message}`;
+                }
+            }
+        });
+        this.toolMap.set(getCvResults.name, getCvResults);
 
         const getCvResult = new DynamicTool({
             name: "get_cv_result_by_id",
-            description: "Retrieves a specific CV evaluation result by its ID.",
+            description: "Retrieves a comprehensive CV evaluation report for a specific CV result ID, including detailed feedback and scores.",
             func: async (id: string) => {
                 this.logger.log("=== getting cv result ===");
                 try {
-                    const result = await this.cvResultModel.findById(id).populate('CV').exec();
-                    return result ? JSON.stringify(result) : "CV result not found.";
+                    const result = await this.cvResultModel.findById(id).populate(['CV', 'jobDescription']).exec();
+
+                    return getCvResultParser(result as any);
                 } catch (err) {
                     this.logger.error("Failed to getting cv result: ", err);
                     return `Error getting CV result: ${err.message}`;
                 }
             },
         });
+        this.toolMap.set(getCvResult.name, getCvResult);
+
+        const getCvDetail = new DynamicTool({
+            name: "get_cv_detail",
+            description: `Retrieves specific image pages or sections of a CV document, identified by a cv_detail_id, typically used for visual inspection of CV content.`,
+            func: async (cvDetailId: string) => {
+                this.logger.log("=== getting cv detail ===");
+                try {
+                    const result = await this.cvDetailModel.findById(cvDetailId);
+
+                    return getCvDetailParser(result as any);
+                } catch (err) {
+                    this.logger.error("Failed to getting cv detail: ", err);
+                    return `Error getting CV result: ${err.message}`;
+                }
+            }
+        });
+        this.toolMap.set(getCvDetail.name, getCvDetail);
 
         return [
             searchVectorStore,
             getListJobDescriptions,
             getJobDescription,
-            getCvResult
+            getCvResults,
+            getCvResult,
+            getCvDetail
         ];
     }
-
-    async getChatHistory(chat_id: number) {
-
-    }
-
 }

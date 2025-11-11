@@ -15,6 +15,8 @@ export const RagState = z.object({
 
   agentResponse: z.any(),
 
+  summary: z.string().default("No summary yet."),
+
   output: z.string().optional()
 });
 

@@ -45,3 +45,5 @@ export class CVResult extends Document {
 }
 
 export const CVResultSchema = SchemaFactory.createForClass(CVResult);
+
+CVResultSchema.index({ CV: 1, jobDescription: 1 }, { unique: true });

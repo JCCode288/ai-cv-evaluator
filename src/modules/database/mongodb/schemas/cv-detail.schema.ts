@@ -24,3 +24,5 @@ export class CVDetail extends Document {
 }
 
 export const CVDetailSchema = SchemaFactory.createForClass(CVDetail);
+
+CVDetailSchema.index({ CV: 1, page: 1 }, { unique: true });

@@ -8,11 +8,15 @@ import { User } from '../database/mongodb/schemas';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { pdfFilter } from 'src/utils/pdf-mime.filter';
 import { Types } from 'mongoose';
+import { Chroma } from '@langchain/community/vectorstores/chroma';
 
 @Controller('evaluate')
 @UseGuards(JwtAuthGuard)
 export class EvaluationController {
-    constructor(private readonly evaluationService: EvaluationService) { }
+    constructor(
+        private readonly evaluationService: EvaluationService,
+        private readonly collection: Chroma
+    ) { }
 
     @Get("/")
     evaluationList(@GetUser() user: any) {
@@ -67,6 +71,6 @@ export class EvaluationController {
     query(@Query("text") searchQuery: string) {
         if (!searchQuery) return [];
 
-        return this.evaluationService.query(searchQuery);
+        return this.collection.similaritySearchWithScore(searchQuery);
     }
 }

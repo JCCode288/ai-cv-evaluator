@@ -15,4 +15,16 @@ import { ChromaClient } from 'chromadb';
   ],
   exports: [ChromaClient],
 })
-export class ChromaDbModule { }
+export class ChromaDbModule {
+  constructor(
+    private readonly chromaDb: ChromaClient
+  ) {
+  }
+
+  // async onModuleInit() {
+  //   await Promise.all([
+  //     this.chromaDb.deleteCollection({ name: process.env.CHROMA_COLLECTION_NAME ?? "cv_collection" }),
+  //     this.chromaDb.deleteCollection({ name: process.env.CHROMA_RAG_COLLECTION_NAME ?? 'rag_collection' })
+  //   ]);
+  // }
+}
