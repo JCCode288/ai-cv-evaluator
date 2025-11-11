@@ -481,15 +481,21 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const collectionName =
             process.env.CHROMA_RAG_COLLECTION_NAME ?? 'rag_collection';
 
-        const apiKey = process.env.CHROMADB_API_KEY;
+        const apiKey = process.env.CHROMA_API_KEY;
+        const tenant = process.env.CHROMA_TENANT;
+        const database = process.env.CHROMA_DATABASE;
         if (apiKey)
             return new Chroma(this.embedding, {
                 collectionName,
+                chromaCloudAPIKey: apiKey,
+                clientParams: {
+                    database,
+                    tenant
+                }
             });
 
         if (!host || !port) throw new Error('Chroma DB Env is not set');
-
-        let url = `http://${host}:${port}`;
+        const url = `http://${host}:${port}`;
         return new Chroma(this.embedding, {
             collectionName,
             url,
@@ -502,16 +508,22 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const collectionName =
             process.env.CHROMA_RAG_COLLECTION_NAME ?? 'rag_collection';
 
-        const apiKey = process.env.CHROMADB_API_KEY;
+        const apiKey = process.env.CHROMA_API_KEY;
+        const tenant = process.env.CHROMA_TENANT;
+        const database = process.env.CHROMA_DATABASE;
         if (apiKey)
             return new Chroma(this.embedding, {
                 collectionName,
+                chromaCloudAPIKey: apiKey,
+                clientParams: {
+                    database,
+                    tenant
+                }
             });
-
 
         if (!host || !port) throw new Error('Chroma DB Env is not set');
 
-        let url = `http://${host}:${port}`;
+        const url = `http://${host}:${port}`;
         return new Chroma(this.embedding, {
             collectionName,
             url,
