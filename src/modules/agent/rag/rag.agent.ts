@@ -151,8 +151,6 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
             if (hist.type === 'human')
                 return new HumanMessage({ content: hist.content });
-
-            return new AIMessage({ content: hist.content });
         });
 
         const question = state.input;
@@ -164,18 +162,21 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             RAG_HUMAN_PROMPT.format({ question, summary }),
         ]);
 
-        let messages: BaseMessage[] = state.messages;
-        if (!messages?.length) messages = [
-            systemPrompt,
-            ...history,
-            humanPrompt,
-        ];
+        if (!state.messages?.length) {
+            state.messages = [
+                systemPrompt,
+                ...history,
+                humanPrompt,
+            ];
+        } else {
+            state.messages.push(humanPrompt);
+        }
 
         const agent = this.buildAgent();
-        const response = await agent.invoke(messages);
+        const response = await agent.invoke(state.messages);
 
         state.agentResponse = response;
-        state.messages = [...messages, response];
+        state.messages.push(response);
 
         return state;
     }
@@ -201,6 +202,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                     const output = await tool.invoke(toolCall.args);
                     this.logger.log(
                         `=== Tool Call succeed: ${toolCall.name} ===`,
+                        output
                     );
 
                     return new ToolMessage({
@@ -296,7 +298,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const searchCvVectorStore = new DynamicTool({
             name: 'search_cv_vector_store',
             description:
-                'Searches the vector store for relevant information about CVs and projects only based on a query string.',
+                'Searches the vector store for relevant information about candidates CVs and projects only based on a query string.',
             func: async (input: string) => {
                 this.logger.log(`=== searching CV vector with input: ${input} ===`);
                 try {
@@ -315,7 +317,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const searchEvalVectorStore = new DynamicTool({
             name: 'search_evaluation_vector_store',
             description:
-                'Searches the vector store for relevant information about CV evaluations on a query string.',
+                'Searches the vector store for relevant information about candidates CV evaluations on a query string.',
             func: async (input: string) => {
                 this.logger.log(`=== searching evaluation vector with input: ${input} ===`);
                 try {
