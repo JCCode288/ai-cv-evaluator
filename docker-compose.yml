@@ -1,13 +1,9 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
-    ports:
-      - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
+      - ~/docker_vol/mongodb_data:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
@@ -15,10 +11,8 @@ services:
   chromadb:
     image: chromadb/chroma:latest
     container_name: chromadb
-    ports:
-      - "8000:8000"
     volumes:
-      - chromadb_data:/chroma
+      - ~/docker_vol/chromadb_data:/chroma
     environment:
       IS_PERSISTENT: "true"
 
@@ -34,12 +28,3 @@ services:
       - chromadb
     env_file:
       - ./.env
-    environment:
-      MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/ai-cv-evaluator?authSource=admin
-    volumes:
-      - .:/app
-      - /app/node_modules
-
-volumes:
-  mongodb_data:
-  chromadb_data:
