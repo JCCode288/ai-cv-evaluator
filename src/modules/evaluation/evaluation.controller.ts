@@ -26,7 +26,6 @@ import { Chroma } from '@langchain/community/vectorstores/chroma';
 export class EvaluationController {
     constructor(
         private readonly evaluationService: EvaluationService,
-        private readonly collection: Chroma,
     ) { }
 
     @Get('/')
@@ -76,12 +75,5 @@ export class EvaluationController {
             throw new BadRequestException('Invalid Id');
 
         return this.evaluationService.getResultById(cvResultId);
-    }
-
-    @Get('/query')
-    query(@Query('text') searchQuery: string) {
-        if (!searchQuery) return [];
-
-        return this.collection.similaritySearchWithScore(searchQuery);
     }
 }

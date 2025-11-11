@@ -6,9 +6,9 @@ import { ChromaClient, CloudClient } from 'chromadb';
     {
       provide: ChromaClient,
       useFactory: () => {
-        const apiKey = process.env.CHROMADB_API_KEY;
-        const tenant = process.env.CHROMADB_TENANT;
-        const database = process.env.CHROMADB_DB_NAME;
+        const apiKey = process.env.CHROMA_API_KEY;
+        const tenant = process.env.CHROMA_TENANT;
+        const database = process.env.CHROMA_DATABASE;
 
         if (apiKey && tenant && database)
           return new CloudClient({
