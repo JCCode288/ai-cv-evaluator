@@ -75,7 +75,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         private readonly cvDetailModel: Model<CVDetail>,
         @InjectModel(Chat.name) private readonly chatModel: Model<Chat>,
         private readonly embedding: GoogleGenerativeAIEmbeddings,
-    ) {}
+    ) { }
 
     onModuleInit() {
         this.tools = this.createTools();
@@ -325,7 +325,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                     `=== searching evaluation vector with input: ${input} ===`,
                 );
                 try {
-                    const results = await this.cvCollection.similaritySearch(
+                    const results = await this.evalCollection.similaritySearch(
                         input,
                         5,
                     );
@@ -481,16 +481,15 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const collectionName =
             process.env.CHROMA_RAG_COLLECTION_NAME ?? 'rag_collection';
 
-        let url = process.env.CHROMA_URI;
-        if (url)
+        const apiKey = process.env.CHROMADB_API_KEY;
+        if (apiKey)
             return new Chroma(this.embedding, {
                 collectionName,
-                url,
             });
 
         if (!host || !port) throw new Error('Chroma DB Env is not set');
 
-        url = `http://${host}:${port}`;
+        let url = `http://${host}:${port}`;
         return new Chroma(this.embedding, {
             collectionName,
             url,
@@ -503,16 +502,16 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const collectionName =
             process.env.CHROMA_RAG_COLLECTION_NAME ?? 'rag_collection';
 
-        let url = process.env.CHROMA_URI;
-        if (url)
+        const apiKey = process.env.CHROMADB_API_KEY;
+        if (apiKey)
             return new Chroma(this.embedding, {
                 collectionName,
-                url,
             });
+
 
         if (!host || !port) throw new Error('Chroma DB Env is not set');
 
-        url = `http://${host}:${port}`;
+        let url = `http://${host}:${port}`;
         return new Chroma(this.embedding, {
             collectionName,
             url,
