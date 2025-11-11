@@ -4,6 +4,10 @@ This project is a backend service for an AI-powered CV evaluation platform. It p
 
 ## Architectural Decisions
 
+The AI CV Evaluator is a microservices-oriented backend system designed to automate and enhance the CV evaluation process. At its core, a NestJS application serves as the central API gateway, handling user authentication, managing job descriptions, and orchestrating CV evaluations. It interacts with a MongoDB database for persistent storage of application data, including user profiles, job descriptions, and CV evaluation results.
+
+For intelligent processing, the system integrates specialized AI Agents: a RAG (Retrieval-Augmented Generation) Agent and an Extractor Agent. The Extractor Agent is responsible for parsing and extracting key information from uploaded CVs. This extracted data, along with job descriptions, is then processed by the RAG Agent, which leverages a ChromaDB vector store for efficient similarity search and contextual retrieval. This allows the RAG Agent to provide nuanced evaluations and generate informed responses to user queries. All uploaded CVs and related project files are securely stored in Google Cloud Storage, ensuring scalability and data durability.
+
 ### Framework and Language
 -   **Framework**: [NestJS](https://nestjs.com/) - A progressive Node.js framework for building efficient, reliable, and scalable server-side applications. Its modular architecture helps in organizing the code and separating concerns.
 -   **Language**: [TypeScript](https://www.typescriptlang.org/) - We use TypeScript to benefit from static typing, which helps in catching errors early and improving the developer experience.
@@ -20,6 +24,7 @@ This project is a backend service for an AI-powered CV evaluation platform. It p
 
 -   **Database**: [MongoDB](https://www.mongodb.com/) - A NoSQL database that provides flexibility and scalability.
 -   **ODM**: [Mongoose](https://mongoosejs.com/) - An Object Data Modeling (ODM) library for MongoDB and Node.js, used for modeling the application data.
+-   **Vector Store**: [ChromaDB](https://www.trychroma.com/) - Used as a vector store for efficient similarity search, enabling the RAG Agent to retrieve contextually relevant information from CVs and projects.
 
 ### File Storage
 
@@ -34,6 +39,14 @@ The project is divided into several modules, each responsible for a specific dom
 -   `JobDescriptionModule`: Manages job descriptions.
 -   `TelegramModule`: Integrates with a Telegram bot.
 -   `DatabaseModule`: Manages the database connection and schemas.
+-   `AgentModule`: Orchestrates AI agents (RAG and Extractor) for intelligent CV processing and evaluation.
+
+## AI Agents
+
+The core intelligence of the platform is powered by two main AI agents:
+
+-   **RAG Agent (Retrieval-Augmented Generation)**: This agent is responsible for understanding user queries, retrieving relevant information from various data sources (like job descriptions, CV evaluation results, and vector stores), and generating informed responses. It utilizes tools to interact with the database and vector store to fetch necessary context.
+-   **Extractor Agent**: This agent focuses on extracting structured information from unstructured data, primarily from CVs. It processes CV documents to identify key details such as skills, experience, education, and contact information, which are then used for evaluation and storage.
 
 ### Configuration
 
@@ -104,7 +117,7 @@ Endpoints postman collection will be included in project as well.
 ### Evaluation (`/evaluate`)
 
 -   `GET /`: Get the list of evaluations for the authenticated user.
--   `POST /`: Evaluate a CV.
+-   `POST /`: Evaluate a CV. This process leverages AI agents to extract information and generate evaluation results.
 -   `POST /upload`: Upload a CV and project file.
 -   `POST /:id/result`: Save the result of a CV evaluation.
 

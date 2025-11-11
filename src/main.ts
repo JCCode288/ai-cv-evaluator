@@ -6,23 +6,23 @@ import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableCors(CorsConfig);
+    const app = await NestFactory.create(AppModule);
+    app.enableCors(CorsConfig);
 
-  const globalPipe = new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    forbidUnknownValues: true,
-    transform: true
-  })
-  app.useGlobalPipes(globalPipe);
+    const globalPipe = new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: true,
+        transform: true,
+    });
+    app.useGlobalPipes(globalPipe);
 
-  const exceptionFilter = new GlobalHttpExceptionFilter();
-  app.useGlobalFilters(exceptionFilter);
+    const exceptionFilter = new GlobalHttpExceptionFilter();
+    app.useGlobalFilters(exceptionFilter);
 
-  const responseInterceptor = new ResponseInterceptor();
-  app.useGlobalInterceptors(responseInterceptor);
+    const responseInterceptor = new ResponseInterceptor();
+    app.useGlobalInterceptors(responseInterceptor);
 
-  await app.listen(process.env.PORT ?? 3000);
+    await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

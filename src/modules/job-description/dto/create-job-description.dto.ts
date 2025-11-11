@@ -1,15 +1,15 @@
 import { IsString, IsArray, IsNotEmpty } from 'class-validator';
 
 export class CreateJobDescriptionDto {
-  @IsString()
-  @IsNotEmpty()
-  title: string;
+    @IsString()
+    @IsNotEmpty()
+    title: string;
 
-  @IsString()
-  @IsNotEmpty()
-  description: string;
+    @IsString()
+    @IsNotEmpty()
+    description: string;
 
-  @IsArray()
-  @IsString({ each: true })
-  requirements: string[];
+    @IsArray()
+    @IsString({ each: true })
+    requirements: string[];
 }

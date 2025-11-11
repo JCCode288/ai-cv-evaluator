@@ -1,15 +1,22 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, Logger, BadRequestException } from '@nestjs/common';
+import {
+    ExceptionFilter,
+    Catch,
+    ArgumentsHost,
+    HttpException,
+    Logger,
+    BadRequestException,
+} from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import e, { Request, Response } from 'express';
 
 @Catch()
 export class GlobalHttpExceptionFilter implements ExceptionFilter {
-    private readonly ISE_MESSAGE = "Internal Server Error";
+    private readonly ISE_MESSAGE = 'Internal Server Error';
     private readonly ISE_STATUS = 500;
     private readonly logger = new Logger(GlobalHttpExceptionFilter.name);
 
     catch(exception: HttpException, host: ArgumentsHost) {
-        this.logger.error("Globally handled: ", exception);
+        this.logger.error('Globally handled: ', exception);
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
         const request = ctx.getRequest<Request>();
@@ -21,7 +28,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         return response.status(status).json({
             success: false,
             message,
-            data
+            data,
         });
     }
 
@@ -45,24 +52,27 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
 
     getData(exception: unknown, path: string) {
         switch (true) {
-            case !!(exception instanceof BadRequestException && (exception as any)?.response?.message):
+            case !!(
+                exception instanceof BadRequestException &&
+                (exception as any)?.response?.message
+            ):
                 return {
                     path: path,
                     timestamp: new Date().getTime(),
-                    ...(exception as any)?.response
-                }
+                    ...(exception as any)?.response,
+                };
 
             case exception instanceof HttpException:
                 return {
                     path: path,
                     timestamp: new Date().getTime(),
-                }
+                };
 
             default:
                 return {
                     path: path,
                     timestamp: new Date().getTime(),
-                }
+                };
         }
     }
 }

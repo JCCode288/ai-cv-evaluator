@@ -1,4 +1,4 @@
-import { IsDefined, IsNotEmpty } from "class-validator";
+import { IsDefined, IsNotEmpty } from 'class-validator';
 
 export class UploadCvDto {
     @IsDefined()

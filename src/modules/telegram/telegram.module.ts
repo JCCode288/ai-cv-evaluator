@@ -4,18 +4,17 @@ import { TelegramController } from './telegram.controller';
 import { HttpModule } from '@nestjs/axios';
 import { EvaluationModule } from '../evaluation/evaluation.module';
 import { MongodbModule } from '../database/mongodb/mongodb.module';
-import { ChromaDbModule } from '../database/chromadb/chromadb.module';
 import { AgentModule } from '../agent/agent.module';
 
 @Module({
-  imports: [
-    HttpModule,
-    EvaluationModule,
-    MongodbModule,
-    EvaluationModule,
-    AgentModule,
-  ],
-  providers: [TelegramService],
-  controllers: [TelegramController]
+    imports: [
+        HttpModule,
+        EvaluationModule,
+        MongodbModule,
+        EvaluationModule,
+        AgentModule,
+    ],
+    providers: [TelegramService],
+    controllers: [TelegramController],
 })
-export class TelegramModule { }
+export class TelegramModule {}

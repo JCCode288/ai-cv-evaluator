@@ -8,15 +8,15 @@ import { ChromaDbModule } from '../database/chromadb/chromadb.module';
 import { StorageModule } from './storage/storage.module';
 
 @Module({
-  imports: [
-    ExtractorModule,
-    AgentModule,
-    MongodbModule,
-    ChromaDbModule,
-    StorageModule
-  ],
-  providers: [EvaluationService],
-  controllers: [EvaluationController],
-  exports: [EvaluationService]
+    imports: [
+        ExtractorModule,
+        AgentModule,
+        MongodbModule,
+        ChromaDbModule,
+        StorageModule,
+    ],
+    providers: [EvaluationService],
+    controllers: [EvaluationController],
+    exports: [EvaluationService],
 })
-export class EvaluationModule { }
+export class EvaluationModule {}

@@ -19,4 +19,5 @@ export class JobDescription extends Document {
     updated_at: Date;
 }
 
-export const JobDescriptionSchema = SchemaFactory.createForClass(JobDescription);
+export const JobDescriptionSchema =
+    SchemaFactory.createForClass(JobDescription);

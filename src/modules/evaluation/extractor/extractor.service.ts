@@ -3,7 +3,11 @@ import {
     DocumentProcessorServiceClient,
     protos,
 } from '@google-cloud/documentai';
-import { IExtractedDocument, IExtractedPage, IExtractParam } from './interfaces/extractor.interfaces';
+import {
+    IExtractedDocument,
+    IExtractedPage,
+    IExtractParam,
+} from './interfaces/extractor.interfaces';
 import { ChromaClient } from 'chromadb';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
@@ -14,29 +18,21 @@ export class ExtractorService {
     private readonly processorId: string;
     private readonly location: string;
     private readonly projectId: string;
-    private readonly version: string;
-    private readonly embeddingModel: GenerativeModel;
 
     constructor() {
         const projectId = process.env.GOOGLE_OCR_PROJECT_ID;
         const location = process.env.GOOGLE_OCR_LOCATION;
-        const version = process.env.GOOGLE_OCR_VERSION;
         const processorId = process.env.GOOGLE_OCR_PROCESSOR_ID;
 
-        if (
-            !projectId
-            || !location
-            || !version
-            || !processorId
-        ) throw new Error("Env for google ocr is not set");
+        if (!projectId || !location || !processorId)
+            throw new Error('Env for google ocr is not set');
 
         this.projectId = projectId;
         this.location = location;
-        this.version = version;
         this.processorId = processorId;
 
         const processor = new DocumentProcessorServiceClient({
-            keyFilename: process.env.GOOGLE_SA_PATH
+            keyFilename: process.env.GOOGLE_SA_PATH,
         });
         this.processor = processor;
     }
@@ -64,7 +60,7 @@ export class ExtractorService {
         const { document } = result;
 
         if (!document || !document.text) {
-            throw new Error("Failed to parse result becuase no document found");
+            throw new Error('Failed to parse result becuase no document found');
         }
 
         const extractedPages: IExtractedPage[] = [];
@@ -74,19 +70,21 @@ export class ExtractorService {
                 const page = document.pages?.[i];
                 if (!page) continue;
 
-                const image = page.image?.content ? Buffer.from(page.image.content).toString("base64") : null;
+                const image = page.image?.content
+                    ? Buffer.from(page.image.content).toString('base64')
+                    : null;
 
                 const texts: string[] = [];
                 if (page.layout?.textAnchor?.textSegments) {
-                    for (let seg of page.layout?.textAnchor?.textSegments) {
-                        const start = +(seg.startIndex ?? "0");
+                    for (const seg of page.layout?.textAnchor?.textSegments) {
+                        const start = +(seg.startIndex ?? '0');
                         const end = seg.endIndex ? +seg.endIndex : 0;
 
                         const text = document.text?.substring(start, end);
                         if (!text) continue;
 
                         texts.push(text);
-                    };
+                    }
                 }
 
                 extractedPages.push({
@@ -116,6 +114,6 @@ export class ExtractorService {
     }
 
     get processorName() {
-        return `projects/${this.projectId}/locations/${this.location}/processors/${this.processorId}`
+        return `projects/${this.projectId}/locations/${this.location}/processors/${this.processorId}`;
     }
 }

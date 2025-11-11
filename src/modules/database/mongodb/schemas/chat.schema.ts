@@ -19,12 +19,12 @@ export class Chat extends Document {
     content: string;
 
     @Prop({ required: true })
-    type: "human" | "ai" | "system";
+    type: 'human' | 'ai' | 'system';
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "CVResult" })
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'CVResult' })
     result_context?: CVResult;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "JobDescription" })
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'JobDescription' })
     job_desc_context?: JobDescription;
 
     @Prop({ required: true, default: new Date() })

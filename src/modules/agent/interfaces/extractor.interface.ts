@@ -1,4 +1,4 @@
-import { AgentInput } from "./agent.interface";
+import { AgentInput } from './agent.interface';
 
 export interface ExtractorInput extends AgentInput {
     job_descriptions: string;

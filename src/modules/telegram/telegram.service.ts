@@ -11,55 +11,63 @@ import { Model } from 'mongoose';
 @Injectable()
 export class TelegramService {
     private readonly logger = new Logger(TelegramService.name);
-    private readonly botToken = process.env.TELEGRAM_BOT_TOKEN ?? "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11";
-    private readonly botEndpoint = process.env.TELEGRAM_BOT_ENDPOINT ?? "https://api.telegram.org/bot";
+    private readonly botToken =
+        process.env.TELEGRAM_BOT_TOKEN ??
+        '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11';
+    private readonly botEndpoint =
+        process.env.TELEGRAM_BOT_ENDPOINT ?? 'https://api.telegram.org/bot';
     private readonly apiUrl = `${this.botEndpoint}${this.botToken}`;
     public secretToken?: string = process.env.SECRET_TOKEN;
 
     constructor(
         @InjectModel(User.name) private readonly userModel: Model<User>,
         private readonly httpService: HttpService,
-        private readonly ragAgent: RagAgent
-    ) { }
+        private readonly ragAgent: RagAgent,
+    ) {}
 
     async handleUpdate(update: Update) {
+        this.logger.log('Received update from Telegram:', update);
+
+        const message = update.message;
+        if (!message || !message.text) return { status: 'ok' };
+
+        const chatId = message.chat.id;
+        const messageId = message.message_id;
+        const updateId = update.update_id;
+
         try {
-            this.logger.log('Received update from Telegram:', update);
-            const message = update.message;
-
-            if (!message || !message.text) return { status: "ok" };
-
-            const chatId = message.chat.id;
-            const messageId = message.message_id;
-            const updateId = update.update_id;
-            const parseMode = "Markdown";
-
             if (!message.from?.username)
                 return await this.sendMessage({
                     chat_id: chatId,
-                    text: "I am sorry, you have to set your user name before talking to me."
+                    text: 'I am sorry, you have to set your user name before talking to me.',
                 });
 
-            const user = await this.userModel.findOneAndUpdate(
-                { telegram_id: chatId },
-                {
-                    $setOnInsert: {
-                        telegram_id: chatId,
-                        username: message.from.username,
+            const user = await this.userModel
+                .findOneAndUpdate(
+                    { telegram_id: chatId },
+                    {
+                        $setOnInsert: {
+                            telegram_id: chatId,
+                            username: message.from.username,
+                        },
                     },
-                },
-                { upsert: true, new: true },
-            ).populate({ path: 'chats', options: { sort: { update_id: 1, type: -1 } } }).exec();
+                    { upsert: true, new: true },
+                )
+                .populate({
+                    path: 'chats',
+                    options: { sort: { update_id: 1, type: -1 }, limit: 20 },
+                })
+                .exec();
 
             const history = user?.chats;
 
-            const input = message.text?.replaceAll('/', '');
+            const input = message.text;
             const text = await this.ragAgent.chat({
                 chat_id: chatId,
                 message_id: messageId,
                 update_id: updateId,
                 input,
-                history
+                history,
             });
 
             if (!text)
@@ -68,12 +76,17 @@ export class TelegramService {
                     text: "I am sorry, there's something wrong with me. Please try again in 5 minutes",
                 });
 
-            await this.sendMessage({ chat_id: chatId, text, parse_mode: parseMode });
+            await this.sendMessage({ chat_id: chatId, text });
 
             return { status: 'ok' };
         } catch (err) {
-            // this.logger.error("Failed to handle update from telegram:", err);
-            return { status: 'failed' }
+            //   this.logger.error("Failed to handle update from telegram:", err);
+            await this.sendMessage({
+                chat_id: chatId,
+                text: "I am sorry, there's something wrong with me. Please try again in 5 minutes",
+            });
+
+            return { status: 'failed' };
         }
     }
 
@@ -81,12 +94,15 @@ export class TelegramService {
         const url = `${this.apiUrl}/sendMessage`;
         try {
             const { data } = await firstValueFrom(
-                this.httpService.post(url, options)
+                this.httpService.post(url, options),
             );
 
             return data;
         } catch (err) {
-            this.logger.error('Error sending message to Telegram:', err?.response);
+            this.logger.error(
+                'Error sending message to Telegram:',
+                err?.response,
+            );
             throw err;
         }
     }
@@ -99,7 +115,7 @@ export class TelegramService {
 
             const params = new URLSearchParams({
                 url: webhookUrl,
-                secret_token: secretToken
+                secret_token: secretToken,
             });
             const url = `${this.apiUrl}/setWebhook?${params.toString()}`;
 
@@ -107,7 +123,7 @@ export class TelegramService {
 
             return data;
         } catch (err) {
-            this.logger.error("Error setting webhook", err?.response?.data);
+            this.logger.error('Error setting webhook', err?.response?.data);
             throw err;
         }
     }
@@ -117,4 +133,3 @@ export class TelegramService {
         return this.secretToken;
     }
 }
-

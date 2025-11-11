@@ -28,7 +28,11 @@ export class CVResult extends Document {
     @Prop({ required: true })
     status: `${CVStatusEnum}`;
 
-    @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'JobDescription' })
+    @Prop({
+        required: true,
+        type: MongooseSchema.Types.ObjectId,
+        ref: 'JobDescription',
+    })
     jobDescription: JobDescription;
 
     @Prop({ required: true, default: new Date() })
@@ -40,8 +44,10 @@ export class CVResult extends Document {
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'CV', required: true })
     CV: CV;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, required: true, ref: "User" })
+    @Prop({ type: MongooseSchema.Types.ObjectId, required: true, ref: 'User' })
     evaluator: User;
 }
 
 export const CVResultSchema = SchemaFactory.createForClass(CVResult);
+
+CVResultSchema.index({ CV: 1, jobDescription: 1 }, { unique: true });
