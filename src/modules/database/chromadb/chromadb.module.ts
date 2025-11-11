@@ -7,8 +7,8 @@ import { ChromaClient } from 'chromadb';
       provide: ChromaClient,
       useFactory: () => {
         return new ChromaClient({
-          host: process.env.CHROMADB_HOST ?? "localhost",
-          port: +(process.env.CHROMADB_PORT ?? "8000")
+          host: process.env.CHROMADB_HOST ?? 'localhost',
+          port: +(process.env.CHROMADB_PORT ?? '8000'),
         });
       },
     },
@@ -16,10 +16,7 @@ import { ChromaClient } from 'chromadb';
   exports: [ChromaClient],
 })
 export class ChromaDbModule {
-  constructor(
-    private readonly chromaDb: ChromaClient
-  ) {
-  }
+  constructor(private readonly chromaDb: ChromaClient) {}
 
   // async onModuleInit() {
   //   await Promise.all([

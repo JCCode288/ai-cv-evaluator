@@ -6,32 +6,32 @@ import { JobDescription } from './job-description.schema';
 
 @Schema()
 export class Chat extends Document {
-    @Prop({ required: true })
-    update_id: number;
+  @Prop({ required: true })
+  update_id: number;
 
-    @Prop({ required: true })
-    chat_id: number;
+  @Prop({ required: true })
+  chat_id: number;
 
-    @Prop({ required: true })
-    message_id: number;
+  @Prop({ required: true })
+  message_id: number;
 
-    @Prop({ required: true })
-    content: string;
+  @Prop({ required: true })
+  content: string;
 
-    @Prop({ required: true })
-    type: "human" | "ai" | "system";
+  @Prop({ required: true })
+  type: 'human' | 'ai' | 'system';
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "CVResult" })
-    result_context?: CVResult;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'CVResult' })
+  result_context?: CVResult;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId, ref: "JobDescription" })
-    job_desc_context?: JobDescription;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'JobDescription' })
+  job_desc_context?: JobDescription;
 
-    @Prop({ required: true, default: new Date() })
-    created_at: Date;
+  @Prop({ required: true, default: new Date() })
+  created_at: Date;
 
-    @Prop({ require: true, default: new Date() })
-    updated_at: Date;
+  @Prop({ require: true, default: new Date() })
+  updated_at: Date;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

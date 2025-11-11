@@ -3,10 +3,14 @@ import { z } from 'zod';
 export const RagState = z.object({
   input: z.string(),
 
-  history: z.array(z.object({
-    type: z.enum(["ai", "human"]),
-    content: z.string()
-  })).default([]),
+  history: z
+    .array(
+      z.object({
+        type: z.enum(['ai', 'human']),
+        content: z.string(),
+      }),
+    )
+    .default([]),
 
   messages: z.array(z.any()).default([]),
 
@@ -15,9 +19,9 @@ export const RagState = z.object({
 
   agentResponse: z.any(),
 
-  summary: z.string().default("No summary yet."),
+  summary: z.string().default('No summary yet.'),
 
-  output: z.string().optional()
+  output: z.string().optional(),
 });
 
 export type RagStateType = z.infer<typeof RagState>;

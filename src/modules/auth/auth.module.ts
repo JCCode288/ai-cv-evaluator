@@ -18,4 +18,4 @@ import { User, UserSchema } from '../database/mongodb/schemas';
   providers: [AuthService, GoogleStrategy, JwtStrategy, RefreshTokenStrategy],
   controllers: [AuthController],
 })
-export class AuthModule { }
+export class AuthModule {}

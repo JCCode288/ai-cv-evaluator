@@ -6,7 +6,7 @@ import { StorageService } from './storage.service';
   exports: [StorageService],
 })
 export class StorageModule implements OnModuleInit {
-  constructor(private readonly storageService: StorageService) { }
+  constructor(private readonly storageService: StorageService) {}
 
   async onModuleInit() {
     await this.storageService.createBucket();

@@ -26,7 +26,7 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthRedirect(@GetUser() user) {
+  googleAuthRedirect(@GetUser() user: any) {
     return this.authService.googleLogin({ user });
   }
 

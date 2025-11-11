@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, MongooseError } from 'mongoose';
@@ -13,7 +17,7 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   async register(createUserDto: RegisterDto) {
     try {
@@ -25,13 +29,19 @@ export class AuthService {
       });
       await newUser.save();
 
-      const tokens = await this.getTokens((newUser._id as any).toString(), newUser.username);
-      await this.updateRefreshToken((newUser._id as any).toString(), tokens.refreshToken);
+      const tokens = await this.getTokens(
+        (newUser._id as any).toString(),
+        newUser.username,
+      );
+      await this.updateRefreshToken(
+        (newUser._id as any).toString(),
+        tokens.refreshToken,
+      );
 
       return tokens;
     } catch (err) {
-      if (err?.message?.includes("duplicate key error"))
-        throw new BadRequestException("You are already registered");
+      if (err?.message?.includes('duplicate key error'))
+        throw new BadRequestException('You are already registered');
 
       throw err;
     }
@@ -39,13 +49,24 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const user = await this.userModel.findOne({ username: loginDto.username });
-    if (!user || !user.password) throw new UnauthorizedException('Invalid credentials');
+    if (!user || !user.password)
+      throw new UnauthorizedException('Invalid credentials');
 
-    const passwordMatches = await bcrypt.compare(loginDto.password, user.password);
-    if (!passwordMatches) throw new UnauthorizedException('Invalid credentials');
+    const passwordMatches = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
+    if (!passwordMatches)
+      throw new UnauthorizedException('Invalid credentials');
 
-    const tokens = await this.getTokens((user._id as any).toString(), user.username);
-    await this.updateRefreshToken((user._id as any).toString(), tokens.refreshToken);
+    const tokens = await this.getTokens(
+      (user._id as any).toString(),
+      user.username,
+    );
+    await this.updateRefreshToken(
+      (user._id as any).toString(),
+      tokens.refreshToken,
+    );
 
     return tokens;
   }
@@ -67,20 +88,36 @@ export class AuthService {
       user = await newUser.save();
     }
 
-    const tokens = await this.getTokens((user._id as any).toString(), user.username);
-    await this.updateRefreshToken((user._id as any).toString(), tokens.refreshToken);
+    const tokens = await this.getTokens(
+      (user._id as any).toString(),
+      user.username,
+    );
+    await this.updateRefreshToken(
+      (user._id as any).toString(),
+      tokens.refreshToken,
+    );
     return tokens;
   }
 
   async refreshToken(userId: string, refreshToken: string) {
     const user = await this.userModel.findById(userId);
-    if (!user || !user.hashedRefreshToken) throw new UnauthorizedException('Access Denied');
+    if (!user || !user.hashedRefreshToken)
+      throw new UnauthorizedException('Access Denied');
 
-    const refreshTokenMatches = await bcrypt.compare(refreshToken, user.hashedRefreshToken);
+    const refreshTokenMatches = await bcrypt.compare(
+      refreshToken,
+      user.hashedRefreshToken,
+    );
     if (!refreshTokenMatches) throw new UnauthorizedException('Access Denied');
 
-    const tokens = await this.getTokens((user._id as any).toString(), user.username);
-    await this.updateRefreshToken((user._id as any).toString(), tokens.refreshToken);
+    const tokens = await this.getTokens(
+      (user._id as any).toString(),
+      user.username,
+    );
+    await this.updateRefreshToken(
+      (user._id as any).toString(),
+      tokens.refreshToken,
+    );
     return tokens;
   }
 

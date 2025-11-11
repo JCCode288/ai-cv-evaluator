@@ -1,3 +1,3 @@
 const CorsConfig = {};
 
-export default CorsConfig
+export default CorsConfig;

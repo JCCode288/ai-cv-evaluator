@@ -13,10 +13,10 @@ import { StorageModule } from './storage/storage.module';
     AgentModule,
     MongodbModule,
     ChromaDbModule,
-    StorageModule
+    StorageModule,
   ],
   providers: [EvaluationService],
   controllers: [EvaluationController],
-  exports: [EvaluationService]
+  exports: [EvaluationService],
 })
-export class EvaluationModule { }
+export class EvaluationModule {}

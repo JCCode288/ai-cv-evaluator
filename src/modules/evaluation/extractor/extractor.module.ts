@@ -7,4 +7,4 @@ import { ChromaDbModule } from 'src/modules/database/chromadb/chromadb.module';
   providers: [ExtractorService],
   exports: [ExtractorService],
 })
-export class ExtractorModule { }
+export class ExtractorModule {}

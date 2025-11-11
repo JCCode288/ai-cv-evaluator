@@ -8,11 +8,16 @@ import { UpdateJobDescriptionDto } from './dto/update-job-description.dto';
 @Injectable()
 export class JobDescriptionService {
   constructor(
-    @InjectModel(JobDescription.name) private readonly jobDescriptionModel: Model<JobDescription>,
-  ) { }
+    @InjectModel(JobDescription.name)
+    private readonly jobDescriptionModel: Model<JobDescription>,
+  ) {}
 
-  async create(createJobDescriptionDto: CreateJobDescriptionDto): Promise<JobDescription> {
-    const createdJobDescription = new this.jobDescriptionModel(createJobDescriptionDto);
+  async create(
+    createJobDescriptionDto: CreateJobDescriptionDto,
+  ): Promise<JobDescription> {
+    const createdJobDescription = new this.jobDescriptionModel(
+      createJobDescriptionDto,
+    );
     return createdJobDescription.save();
   }
 
@@ -24,12 +29,16 @@ export class JobDescriptionService {
     return this.jobDescriptionModel.findById(id).exec();
   }
 
-  async update(id: string, updateJobDescriptionDto: UpdateJobDescriptionDto): Promise<JobDescription | null> {
-    return this.jobDescriptionModel.findByIdAndUpdate(id, updateJobDescriptionDto, { new: true }).exec();
+  async update(
+    id: string,
+    updateJobDescriptionDto: UpdateJobDescriptionDto,
+  ): Promise<JobDescription | null> {
+    return this.jobDescriptionModel
+      .findByIdAndUpdate(id, updateJobDescriptionDto, { new: true })
+      .exec();
   }
 
   async remove(id: string): Promise<JobDescription | null> {
     return this.jobDescriptionModel.findByIdAndDelete(id).exec();
   }
 }
-

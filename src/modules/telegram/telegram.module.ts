@@ -4,7 +4,6 @@ import { TelegramController } from './telegram.controller';
 import { HttpModule } from '@nestjs/axios';
 import { EvaluationModule } from '../evaluation/evaluation.module';
 import { MongodbModule } from '../database/mongodb/mongodb.module';
-import { ChromaDbModule } from '../database/chromadb/chromadb.module';
 import { AgentModule } from '../agent/agent.module';
 
 @Module({
@@ -16,6 +15,6 @@ import { AgentModule } from '../agent/agent.module';
     AgentModule,
   ],
   providers: [TelegramService],
-  controllers: [TelegramController]
+  controllers: [TelegramController],
 })
-export class TelegramModule { }
+export class TelegramModule {}

@@ -1,7 +1,4 @@
-import {
-  Schema,
-  Prop, SchemaFactory
-} from '@nestjs/mongoose';
+import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { CVDetail } from './cv-detail.schema';
 import { User } from './user.schema';
@@ -23,7 +20,7 @@ export class CV extends Document {
   @Prop({
     required: true,
     text: true,
-    index: true
+    index: true,
   })
   project_filename: string;
 
@@ -33,7 +30,7 @@ export class CV extends Document {
   project_mimetype: string;
 
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId }], default: [] })
-  details: CVDetail[]
+  details: CVDetail[];
 
   @Prop({ required: true, default: new Date() })
   created_at: Date;
@@ -41,7 +38,7 @@ export class CV extends Document {
   @Prop({ required: true, default: new Date() })
   updated_at: Date;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, required: true, ref: "User" })
+  @Prop({ type: MongooseSchema.Types.ObjectId, required: true, ref: 'User' })
   uploader: User;
 }
 

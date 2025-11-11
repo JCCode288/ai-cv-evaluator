@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsObject, IsEnum, IsNotEmptyObject, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsObject,
+  IsEnum,
+  IsNotEmptyObject,
+  IsOptional,
+} from 'class-validator';
 import { CVResult } from 'src/modules/database/mongodb/schemas/cv-result.schema';
 import { CVStatusEnum } from 'src/utils/cv-status.enum';
 
@@ -10,7 +17,7 @@ export class CvResultDto {
   @IsEnum(CVStatusEnum)
   @IsString()
   @IsNotEmpty()
-  status: `${CVStatusEnum}`
+  status: `${CVStatusEnum}`;
 
   @IsOptional()
   @IsObject()

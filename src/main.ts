@@ -13,8 +13,8 @@ async function bootstrap() {
     whitelist: true,
     forbidNonWhitelisted: true,
     forbidUnknownValues: true,
-    transform: true
-  })
+    transform: true,
+  });
   app.useGlobalPipes(globalPipe);
 
   const exceptionFilter = new GlobalHttpExceptionFilter();
