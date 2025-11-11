@@ -75,7 +75,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         private readonly cvDetailModel: Model<CVDetail>,
         @InjectModel(Chat.name) private readonly chatModel: Model<Chat>,
         private readonly embedding: GoogleGenerativeAIEmbeddings,
-    ) {}
+    ) { }
 
     onModuleInit() {
         this.tools = this.createTools();
@@ -152,7 +152,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             if (hist.type === 'human')
                 return new HumanMessage({ content: hist.content });
 
-            return new SystemMessage({ content: hist.content });
+            return new AIMessage({ content: hist.content });
         });
 
         const question = state.input;
@@ -164,8 +164,14 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             RAG_HUMAN_PROMPT.format({ question, summary }),
         ]);
 
+        let messages: BaseMessage[] = state.messages;
+        if (!messages?.length) messages = [
+            systemPrompt,
+            ...history,
+            humanPrompt,
+        ];
+
         const agent = this.buildAgent();
-        const messages: BaseMessage[] = [systemPrompt, ...history, humanPrompt];
         const response = await agent.invoke(messages);
 
         state.agentResponse = response;
@@ -195,14 +201,10 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                     const output = await tool.invoke(toolCall.args);
                     this.logger.log(
                         `=== Tool Call succeed: ${toolCall.name} ===`,
-                        output,
                     );
 
                     return new ToolMessage({
-                        content:
-                            typeof output === 'string'
-                                ? output
-                                : JSON.stringify(output),
+                        content: output,
                         tool_call_id: toolCall.id,
                     });
                 } catch (error) {
@@ -228,7 +230,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const parser = new StringOutputParser();
         const model = this.buildModel('gemini-2.5-flash', 0.5).pipe(parser);
 
-        const history = state.messages.filter((msg) => msg.role !== 'system');
+        const history = state.messages.filter((msg) => !(msg instanceof SystemMessage));
         const summary = state.summary;
 
         const systemMessage = await SUMMARIZER_SYSTEM_PROMPT.format({});
@@ -239,8 +241,6 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             ...history,
             humanMessage,
         ];
-        console.log({ messages });
-
         const result = await model.invoke(messages);
         state.summary = result ?? 'No summary yet.';
 
@@ -298,7 +298,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             description:
                 'Searches the vector store for relevant information about CVs and projects only based on a query string.',
             func: async (input: string) => {
-                this.logger.log('=== searching vector ===');
+                this.logger.log(`=== searching CV vector with input: ${input} ===`);
                 try {
                     const results = await this.cvCollection.similaritySearch(
                         input,
@@ -317,7 +317,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             description:
                 'Searches the vector store for relevant information about CV evaluations on a query string.',
             func: async (input: string) => {
-                this.logger.log('=== searching vector ===');
+                this.logger.log(`=== searching evaluation vector with input: ${input} ===`);
                 try {
                     const results = await this.cvCollection.similaritySearch(
                         input,
@@ -337,7 +337,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 'Retrieves a list of available job descriptions, including their titles and brief descriptions.',
             schema: GetListJobDescSchema,
             func: async (input) => {
-                this.logger.log('=== getting job listing ===');
+                this.logger.log(`=== getting job listing with input: ${JSON.stringify(input)} ===`);
                 try {
                     const fields = {
                         title: 1,
@@ -361,7 +361,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             name: 'get_job_description_by_id',
             description: 'Retrieves a specific job description by its ID.',
             func: async (id: string) => {
-                this.logger.log('=== getting job detail ===');
+                this.logger.log(`=== getting job detail with ID: ${id} ===`);
                 try {
                     const job = await this.jobDescriptionModel
                         .findById(id)
@@ -384,7 +384,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 'Retrieves a list of CV evaluation summaries, including their status, match rates, and overall scores.',
             schema: GetCvResultsSchema,
             func: async (input) => {
-                this.logger.log('=== getting cv result list ===');
+                this.logger.log(`=== getting cv result list with input:  ${JSON.stringify(input)} ===`);
                 try {
                     const fields = {
                         status: 1,
@@ -419,7 +419,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             description:
                 'Retrieves a comprehensive CV evaluation report for a specific CV result ID, including detailed feedback and scores.',
             func: async (id: string) => {
-                this.logger.log('=== getting cv result ===');
+                this.logger.log(`=== getting CV result with ID: ${id} ===`);
                 try {
                     const result = await this.cvResultModel
                         .findById(id)
@@ -439,7 +439,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             name: 'get_cv_detail',
             description: `Retrieves specific image pages or sections of a CV document, identified by a cv_detail_id, typically used for visual inspection of CV content.`,
             func: async (cvDetailId: string) => {
-                this.logger.log('=== getting cv detail ===');
+                this.logger.log(`=== getting CV detail with ID: ${cvDetailId} ===`);
                 try {
                     const result =
                         await this.cvDetailModel.findById(cvDetailId);
