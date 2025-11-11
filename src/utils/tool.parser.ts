@@ -60,5 +60,9 @@ export function getCvResultParser(result?: CVResult): string {
 export function getCvDetailParser(result?: CVDetail): string {
     if (!result) return 'CV details not found';
 
-    return `page ${result.page}: \n\tdata:image/jpeg;base64,${result.base64_image}`;
+    return `page ${result.page}:
+    texts: ${result.texts.join('\n') || 'N/A'}
+    created_at: ${result.created_at}
+    updated_at: ${result.updated_at}`;
 }
+
