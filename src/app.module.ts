@@ -29,4 +29,4 @@ const modules = [EvaluationModule, TelegramModule, AgentModule];
 @Module({
     imports: [...configs, ...modules, JobDescriptionModule, AuthModule],
 })
-export class AppModule {}
+export class AppModule { }

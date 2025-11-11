@@ -65,4 +65,3 @@ export function getCvDetailParser(result?: CVDetail): string {
     created_at: ${result.created_at}
     updated_at: ${result.updated_at}`;
 }
-

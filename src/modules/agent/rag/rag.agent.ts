@@ -75,7 +75,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         private readonly cvDetailModel: Model<CVDetail>,
         @InjectModel(Chat.name) private readonly chatModel: Model<Chat>,
         private readonly embedding: GoogleGenerativeAIEmbeddings,
-    ) { }
+    ) {}
 
     onModuleInit() {
         this.tools = this.createTools();
@@ -155,21 +155,19 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
         const question = state.input;
         const summary = state.summary;
-        state.agentResponse = null;
-
-        const [systemPrompt, humanPrompt] = await Promise.all([
-            RAG_SYSTEM_PROMPT.format({ today: new Date().toLocaleString() }),
-            RAG_HUMAN_PROMPT.format({ question, summary }),
-        ]);
 
         if (!state.messages?.length) {
             state.messages = [
-                systemPrompt,
+                await RAG_SYSTEM_PROMPT.format({
+                    today: new Date().toLocaleString(),
+                }),
                 ...history,
-                humanPrompt,
+                await RAG_HUMAN_PROMPT.format({ question, summary }),
             ];
         } else {
-            state.messages.push(humanPrompt);
+            state.messages.push(
+                await RAG_HUMAN_PROMPT.format({ question, summary }),
+            );
         }
 
         const agent = this.buildAgent();
@@ -202,7 +200,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                     const output = await tool.invoke(toolCall.args);
                     this.logger.log(
                         `=== Tool Call succeed: ${toolCall.name} ===`,
-                        output
+                        output,
                     );
 
                     return new ToolMessage({
@@ -232,7 +230,9 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const parser = new StringOutputParser();
         const model = this.buildModel('gemini-2.5-flash', 0.5).pipe(parser);
 
-        const history = state.messages.filter((msg) => !(msg instanceof SystemMessage));
+        const history = state.messages.filter(
+            (msg) => !(msg instanceof SystemMessage),
+        );
         const summary = state.summary;
 
         const systemMessage = await SUMMARIZER_SYSTEM_PROMPT.format({});
@@ -300,7 +300,9 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             description:
                 'Searches the vector store for relevant information about candidates CVs and projects only based on a query string.',
             func: async (input: string) => {
-                this.logger.log(`=== searching CV vector with input: ${input} ===`);
+                this.logger.log(
+                    `=== searching CV vector with input: ${input} ===`,
+                );
                 try {
                     const results = await this.cvCollection.similaritySearch(
                         input,
@@ -319,7 +321,9 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             description:
                 'Searches the vector store for relevant information about candidates CV evaluations on a query string.',
             func: async (input: string) => {
-                this.logger.log(`=== searching evaluation vector with input: ${input} ===`);
+                this.logger.log(
+                    `=== searching evaluation vector with input: ${input} ===`,
+                );
                 try {
                     const results = await this.cvCollection.similaritySearch(
                         input,
@@ -339,7 +343,9 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 'Retrieves a list of available job descriptions, including their titles and brief descriptions.',
             schema: GetListJobDescSchema,
             func: async (input) => {
-                this.logger.log(`=== getting job listing with input: ${JSON.stringify(input)} ===`);
+                this.logger.log(
+                    `=== getting job listing with input: ${JSON.stringify(input)} ===`,
+                );
                 try {
                     const fields = {
                         title: 1,
@@ -386,7 +392,9 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 'Retrieves a list of CV evaluation summaries, including their status, match rates, and overall scores.',
             schema: GetCvResultsSchema,
             func: async (input) => {
-                this.logger.log(`=== getting cv result list with input:  ${JSON.stringify(input)} ===`);
+                this.logger.log(
+                    `=== getting cv result list with input:  ${JSON.stringify(input)} ===`,
+                );
                 try {
                     const fields = {
                         status: 1,
@@ -441,7 +449,9 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             name: 'get_cv_detail',
             description: `Retrieves specific image pages or sections of a CV document, identified by a cv_detail_id, typically used for visual inspection of CV content.`,
             func: async (cvDetailId: string) => {
-                this.logger.log(`=== getting CV detail with ID: ${cvDetailId} ===`);
+                this.logger.log(
+                    `=== getting CV detail with ID: ${cvDetailId} ===`,
+                );
                 try {
                     const result =
                         await this.cvDetailModel.findById(cvDetailId);

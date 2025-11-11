@@ -16,4 +16,4 @@ import { SCHEMAS } from './schemas';
     ],
     exports: [MongooseModule.forFeature(SCHEMAS)],
 })
-export class MongodbModule {}
+export class MongodbModule { }

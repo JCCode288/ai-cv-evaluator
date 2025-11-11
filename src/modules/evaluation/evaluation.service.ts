@@ -26,7 +26,7 @@ import { IExtractorOutput } from '../agent/extractor/extractor.output';
 @Injectable()
 export class EvaluationService implements OnModuleInit {
     private readonly logger = new Logger(EvaluationService.name);
-    private queue: PQueue; // Type this.queue as PQueue
+    private queue: PQueue;
     private readonly collectionName =
         process.env.CHROMA_COLLECTION_NAME ?? 'cv_collection';
     private readonly collectionNameRag =
@@ -47,7 +47,7 @@ export class EvaluationService implements OnModuleInit {
         private readonly chromaDb: ChromaClient,
         private readonly extractorAgent: ExtractorAgent,
         private readonly embedding: GoogleGeminiEmbeddingFunction,
-    ) {}
+    ) { }
 
     async onModuleInit() {
         this.queue = new PQueue({ concurrency: 3 });
