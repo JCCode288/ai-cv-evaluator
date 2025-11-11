@@ -56,8 +56,8 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Google creds
-<<<<<<< HEAD
 *.secret.json
 
 # file secret
 solution_document.md
+*.postman*
