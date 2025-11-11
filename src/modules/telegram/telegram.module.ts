@@ -7,14 +7,14 @@ import { MongodbModule } from '../database/mongodb/mongodb.module';
 import { AgentModule } from '../agent/agent.module';
 
 @Module({
-  imports: [
-    HttpModule,
-    EvaluationModule,
-    MongodbModule,
-    EvaluationModule,
-    AgentModule,
-  ],
-  providers: [TelegramService],
-  controllers: [TelegramController],
+    imports: [
+        HttpModule,
+        EvaluationModule,
+        MongodbModule,
+        EvaluationModule,
+        AgentModule,
+    ],
+    providers: [TelegramService],
+    controllers: [TelegramController],
 })
 export class TelegramModule {}

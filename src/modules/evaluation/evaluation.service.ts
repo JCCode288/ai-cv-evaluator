@@ -38,14 +38,16 @@ export class EvaluationService implements OnModuleInit {
         @InjectModel(CV.name) private readonly cvModel: Model<CV>,
         @InjectModel(JobDescription.name)
         private readonly jobDescriptionModel: Model<JobDescription>,
-        @InjectModel(CVResult.name) private readonly cvResultModel: Model<CVResult>,
-        @InjectModel(CVDetail.name) private readonly cvDetailModel: Model<CVDetail>,
+        @InjectModel(CVResult.name)
+        private readonly cvResultModel: Model<CVResult>,
+        @InjectModel(CVDetail.name)
+        private readonly cvDetailModel: Model<CVDetail>,
         private readonly storageService: StorageService,
         private readonly extractorService: ExtractorService,
         private readonly chromaDb: ChromaClient,
         private readonly extractorAgent: ExtractorAgent,
         private readonly embedding: GoogleGeminiEmbeddingFunction,
-    ) { }
+    ) {}
 
     async onModuleInit() {
         this.queue = new PQueue({ concurrency: 3 });
@@ -126,7 +128,8 @@ export class EvaluationService implements OnModuleInit {
             const jobDesc = await this.jobDescriptionModel
                 .findById(evaluateDto.jobDescriptionId)
                 .exec();
-            if (!jobDesc) throw new BadRequestException('Job posting is not found');
+            if (!jobDesc)
+                throw new BadRequestException('Job posting is not found');
 
             const cvResult = new this.cvResultModel({
                 status: CVStatusEnum.PENDING,
@@ -181,10 +184,13 @@ export class EvaluationService implements OnModuleInit {
 
             const [llmResult, vector_id] = await Promise.all([
                 this.llmExtraction(jobDesc, extractedCv, extractedProject),
-                this.saveExtractedCvToChroma(cvResult, extractedCv, extractedProject),
+                this.saveExtractedCvToChroma(
+                    cvResult,
+                    extractedCv,
+                    extractedProject,
+                ),
             ]);
 
-            // Call saveCvDetail separately as its return value is not directly used in the destructuring
             await this.saveCvDetail(cvResult, extractedCv, extractedProject);
 
             await this.cvResultModel
@@ -217,7 +223,11 @@ export class EvaluationService implements OnModuleInit {
         extractedCv: IExtractedDocument,
         extractedProject: IExtractedDocument,
     ): Promise<string> {
-        if (!cvResult._id || !extractedCv.fullText || !extractedProject.fullText)
+        if (
+            !cvResult._id ||
+            !extractedCv.fullText ||
+            !extractedProject.fullText
+        )
             throw new Error('Extracted data is not complete');
 
         const cv_id = `${cvResult._id}_cv`;
@@ -242,7 +252,7 @@ export class EvaluationService implements OnModuleInit {
 
     private async saveCvEvaluationSummaryToChroma(
         cvResult: CVResult,
-        llmResult: IExtractorOutput
+        llmResult: IExtractorOutput,
     ): Promise<void> {
         if (!cvResult._id || !llmResult?.overall_summary) {
             throw new Error(

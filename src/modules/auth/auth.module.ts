@@ -10,12 +10,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../database/mongodb/schemas';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    PassportModule,
-    JwtModule.register({}),
-  ],
-  providers: [AuthService, GoogleStrategy, JwtStrategy, RefreshTokenStrategy],
-  controllers: [AuthController],
+    imports: [
+        MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+        PassportModule,
+        JwtModule.register({}),
+    ],
+    providers: [AuthService, GoogleStrategy, JwtStrategy, RefreshTokenStrategy],
+    controllers: [AuthController],
 })
 export class AuthModule {}

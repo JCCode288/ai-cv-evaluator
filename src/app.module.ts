@@ -8,25 +8,25 @@ import { JobDescriptionModule } from './modules/job-description/job-description.
 import { AuthModule } from './modules/auth/auth.module';
 
 const configs = [
-  ConfigModule.forRoot({
-    isGlobal: true,
-  }),
-  MongooseModule.forRootAsync({
-    useFactory: () => {
-      const uri = process.env.MONGODB_URI ?? 'mongodb://localhost:27017';
-      const dbName = process.env.MONGODB_DB_NAME ?? 'ai-cv-evaluator';
+    ConfigModule.forRoot({
+        isGlobal: true,
+    }),
+    MongooseModule.forRootAsync({
+        useFactory: () => {
+            const uri = process.env.MONGODB_URI ?? 'mongodb://localhost:27017';
+            const dbName = process.env.MONGODB_DB_NAME ?? 'ai-cv-evaluator';
 
-      return {
-        uri,
-        dbName,
-      };
-    },
-  }),
+            return {
+                uri,
+                dbName,
+            };
+        },
+    }),
 ];
 
 const modules = [EvaluationModule, TelegramModule, AgentModule];
 
 @Module({
-  imports: [...configs, ...modules, JobDescriptionModule, AuthModule],
+    imports: [...configs, ...modules, JobDescriptionModule, AuthModule],
 })
 export class AppModule {}

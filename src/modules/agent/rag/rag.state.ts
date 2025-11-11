@@ -1,27 +1,27 @@
 import { z } from 'zod';
 
 export const RagState = z.object({
-  input: z.string(),
+    input: z.string(),
 
-  history: z
-    .array(
-      z.object({
-        type: z.enum(['ai', 'human']),
-        content: z.string(),
-      }),
-    )
-    .default([]),
+    history: z
+        .array(
+            z.object({
+                type: z.enum(['ai', 'human']),
+                content: z.string(),
+            }),
+        )
+        .default([]),
 
-  messages: z.array(z.any()).default([]),
+    messages: z.array(z.any()).default([]),
 
-  context: z.array(z.string()).default([]),
-  jobDescriptionId: z.string().optional(),
+    context: z.array(z.string()).default([]),
+    jobDescriptionId: z.string().optional(),
 
-  agentResponse: z.any(),
+    agentResponse: z.any(),
 
-  summary: z.string().default('No summary yet.'),
+    summary: z.string().default('No summary yet.'),
 
-  output: z.string().optional(),
+    output: z.string().optional(),
 });
 
 export type RagStateType = z.infer<typeof RagState>;

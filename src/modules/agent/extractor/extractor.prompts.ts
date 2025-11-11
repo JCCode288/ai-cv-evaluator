@@ -1,8 +1,8 @@
 // You can migrate this later to db
 import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
 } from '@langchain/core/prompts';
 
 export const TEMPLATE_SYSTEM_EXTRACTOR = `
@@ -50,6 +50,6 @@ Result:
 `;
 
 export const EXTRACTOR_PROMPT = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(TEMPLATE_SYSTEM_EXTRACTOR),
-  HumanMessagePromptTemplate.fromTemplate(TEMPLATE_HUMAN_EXTRACTOR),
+    SystemMessagePromptTemplate.fromTemplate(TEMPLATE_SYSTEM_EXTRACTOR),
+    HumanMessagePromptTemplate.fromTemplate(TEMPLATE_HUMAN_EXTRACTOR),
 ]);

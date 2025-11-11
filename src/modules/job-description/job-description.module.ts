@@ -4,8 +4,8 @@ import { JobDescriptionController } from './job-description.controller';
 import { MongodbModule } from '../database/mongodb/mongodb.module';
 
 @Module({
-  imports: [MongodbModule],
-  providers: [JobDescriptionService],
-  controllers: [JobDescriptionController],
+    imports: [MongodbModule],
+    providers: [JobDescriptionService],
+    controllers: [JobDescriptionController],
 })
 export class JobDescriptionModule {}
