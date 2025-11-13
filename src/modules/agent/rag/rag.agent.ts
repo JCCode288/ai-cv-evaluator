@@ -10,7 +10,7 @@ import {
     GoogleGenerativeAIEmbeddings,
 } from '@langchain/google-genai';
 import { HarmBlockThreshold, HarmCategory } from '@google/generative-ai';
-import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools';
+import { DynamicStructuredTool } from '@langchain/core/tools';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import {
     CompiledStateGraph,
@@ -34,7 +34,7 @@ import {
     ToolMessage,
 } from '@langchain/core/messages';
 import { Chat } from 'src/modules/database/mongodb/schemas/chat.schema';
-import { GetCvResultsSchema, GetListJobDescSchema } from './rag-tool.schema';
+import { GetCvDetailSchema, GetCvEvalSchema, GetCvResultsSchema, GetJobDescriptionSchema, GetListJobDescSchema, SearchCvEvalSchema, SearchCvVectorOutput, SearchCvVectorSchema } from './rag-tool.schema';
 import {
     getCvDetailParser,
     getCvResultParser,
@@ -45,11 +45,13 @@ import {
 } from 'src/utils/tool.parser';
 import { CVDetail } from 'src/modules/database/mongodb/schemas/cv-detail.schema';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { ToolResponseBuilder } from './tool-res.builder';
+import { ChromaClient } from 'chromadb';
 
 @Injectable()
 export class RagAgent implements AgentStrategy, OnModuleInit {
-    private tools: (DynamicTool | DynamicStructuredTool)[];
-    private toolMap: Map<string, DynamicTool | DynamicStructuredTool> =
+    private tools: DynamicStructuredTool[];
+    private toolMap: Map<string, DynamicStructuredTool> =
         new Map();
     private graph: CompiledStateGraph<
         any,
@@ -75,9 +77,10 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         private readonly cvDetailModel: Model<CVDetail>,
         @InjectModel(Chat.name) private readonly chatModel: Model<Chat>,
         private readonly embedding: GoogleGenerativeAIEmbeddings,
+        private readonly chroma: ChromaClient
     ) { }
 
-    onModuleInit() {
+    async onModuleInit() {
         this.tools = this.createTools();
 
         const checkpointer = new MemorySaver();
@@ -91,8 +94,12 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
             .addEdge('summarizer', END)
             .compile({ checkpointer });
 
-        this.cvCollection = this.initCvCollection();
-        this.evalCollection = this.initEvalCollection();
+        this.cvCollection = await this.initCvCollection();
+        this.evalCollection = await this.initEvalCollection();
+
+        this.cvCollection.similaritySearch("yahallo")
+            .then(res => console.log({ res }));
+
     }
 
     async chat(input: RagInput): Promise<string> {
@@ -101,6 +108,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 configurable: { thread_id: input.chat_id },
                 recursionLimit: 50,
             };
+
             const chat = new this.chatModel({
                 chat_id: input.chat_id,
                 update_id: input.update_id,
@@ -111,16 +119,16 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
             await chat.save();
 
-            const result = await this.graph.invoke(
-                {
-                    input: input.input,
-                    history: input.history,
-                    chat_id: input.chat_id,
-                    update_id: input.update_id,
-                    message_id: input.message_id,
-                },
-                config,
-            );
+            const previousState = (await this.graph.getState(config)).values;
+
+            const payload: Record<string, any> = {
+                input: input.input,
+                history: input.history,
+            };
+            if (previousState.messages) payload.messages = previousState.messages;
+            if (previousState.summary) payload.summary = previousState.summary;
+
+            const result = await this.graph.invoke(payload, config);
 
             let chatResponse = result.agentResponse?.content;
             if (typeof chatResponse !== 'string') {
@@ -156,6 +164,8 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         const question = state.input;
         const summary = state.summary;
 
+        this.logger.debug({ summary });
+
         if (!state.messages?.length) {
             state.messages = [
                 await RAG_SYSTEM_PROMPT.format({
@@ -181,8 +191,10 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
     private async toolNode(state: RagStateType) {
         const { agentResponse } = state;
-        if (!agentResponse.tool_calls) {
-            throw new Error('toolNode received state with no tool calls');
+        if (!agentResponse?.tool_calls) {
+            this.logger.error('toolNode received state with no tool calls');
+            // this ensure that error when tool_calls logic fails always returning nothing. basically skipping this node
+            return state;
         }
 
         const toolMessages = await Promise.all(
@@ -193,7 +205,10 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                     this.logger.warn(
                         `=== Tool not found: ${toolCall.name} ===`,
                     );
-                    return `Tool ${toolCall.name} not found`;
+                    return new ToolMessage({
+                        content: `Tool ${toolCall.name} not found`,
+                        tool_call_id: toolCall.id
+                    });
                 }
 
                 try {
@@ -295,43 +310,61 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
     }
 
     private createTools() {
-        const searchCvVectorStore = new DynamicTool({
+        const searchCvVectorStore = new DynamicStructuredTool({
             name: 'search_cv_vector_store',
             description:
                 'Searches the vector store for relevant information about candidates CVs and projects only based on a query string.',
-            func: async (input: string) => {
+            schema: SearchCvVectorSchema,
+            func: async ({ query }) => {
                 this.logger.log(
-                    `=== searching CV vector with input: ${input} ===`,
+                    `=== searching CV vector with input: ${query} ===`,
                 );
+                const response = new ToolResponseBuilder();
                 try {
                     const results = await this.cvCollection.similaritySearch(
-                        input,
+                        query,
                         5,
                     );
-                    return searchVectorStoreParser(results);
+                    const text = searchVectorStoreParser(results);
+                    response.addTexts(text);
+
+                    return response.getContent();
                 } catch (err) {
-                    return err;
+                    this.logger.error('Failed to searching cv', err);
+                    const text = `Error searching CV content: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
                 }
             },
         });
         this.toolMap.set(searchCvVectorStore.name, searchCvVectorStore);
 
-        const searchEvalVectorStore = new DynamicTool({
+        const searchEvalVectorStore = new DynamicStructuredTool({
             name: 'search_evaluation_vector_store',
             description:
                 'Searches the vector store for relevant information about candidates CV evaluations on a query string.',
-            func: async (input: string) => {
+            schema: SearchCvEvalSchema,
+            func: async ({ query }) => {
                 this.logger.log(
-                    `=== searching evaluation vector with input: ${input} ===`,
+                    `=== searching evaluation vector with input: ${query} ===`,
                 );
+                const response = new ToolResponseBuilder();
                 try {
                     const results = await this.evalCollection.similaritySearch(
-                        input,
+                        query,
                         5,
                     );
-                    return searchVectorStoreParser(results);
+                    const text = searchVectorStoreParser(results);
+                    response.addTexts(text);
+                    return response.getContent()
                 } catch (err) {
-                    return err;
+                    this.logger.error('Failed to searching cv eval', err);
+                    const text = `Error searching CV eval content: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
+
                 }
             },
         });
@@ -346,30 +379,44 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 this.logger.log(
                     `=== getting job listing with input: ${JSON.stringify(input)} ===`,
                 );
+                const response = new ToolResponseBuilder();
                 try {
                     const fields = {
                         title: 1,
                         description: 1,
                     };
 
-                    const jobs = await this.jobDescriptionModel
-                        .find(input.query, fields)
-                        .exec();
+                    const { sort, limit, ...query } = input.query;
+                    const op = this.jobDescriptionModel
+                        .find(query, fields);
 
-                    return getListJobParser(jobs);
+                    if (sort) op.sort(sort);
+                    if (limit) op.limit(limit);
+
+                    const jobs = await op.exec()
+
+                    const text = getListJobParser(jobs);
+                    response.addTexts(text);
+
+                    return response.getContent();
                 } catch (err) {
                     this.logger.error('Failed to getting list job', err);
-                    return `Error getting job listing: ${err.message}`;
+                    const text = `Error getting job listing: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
                 }
             },
         });
         this.toolMap.set(getListJobDescriptions.name, getListJobDescriptions);
 
-        const getJobDescription = new DynamicTool({
+        const getJobDescription = new DynamicStructuredTool({
             name: 'get_job_description_by_id',
             description: 'Retrieves a specific job description by its ID.',
-            func: async (id: string) => {
+            schema: GetJobDescriptionSchema,
+            func: async ({ id }) => {
                 this.logger.log(`=== getting job detail with ID: ${id} ===`);
+                const response = new ToolResponseBuilder();
                 try {
                     const job = await this.jobDescriptionModel
                         .findById(id)
@@ -377,10 +424,16 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
                     if (!job) return 'Job description not found.';
 
-                    return getJobParser(job);
+                    const text = getJobParser(job);
+                    response.addTexts(text);
+
+                    return response.getContent();
                 } catch (err) {
                     this.logger.error('Failed to getting job desc: ', err);
-                    return `Error getting job description: ${err.message}`;
+                    const text = `Error getting job description: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
                 }
             },
         });
@@ -395,6 +448,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 this.logger.log(
                     `=== getting cv result list with input:  ${JSON.stringify(input)} ===`,
                 );
+                const response = new ToolResponseBuilder();
                 try {
                     const fields = {
                         status: 1,
@@ -406,60 +460,101 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                         cv_filename: 1,
                         project_filename: 1,
                     };
-                    const results = await this.cvResultModel
-                        .find(input.query, fields)
-                        .populate({
-                            path: 'CV',
-                            options: { fields: cvFields },
-                        });
+                    const jobDescFields = {
+                        title: 1
+                    };
 
-                    return getCvResultsParser(results);
+                    const { sort, limit, ...query } = input.query;
+
+                    const op = this.cvResultModel
+                        .find(query, fields)
+                        .populate([
+                            {
+                                path: 'CV',
+                                options: { fields: cvFields },
+                            },
+                            {
+                                path: 'jobDescription',
+                                options: { fields: jobDescFields }
+                            }
+                        ]);
+
+                    if (sort) op.sort(sort);
+                    if (limit) op.limit(limit);
+
+                    const results = await op.exec();
+
+                    this.logger.debug(results);
+                    const text = getCvResultsParser(results);
+                    response.addTexts(text);
+
+                    return response.getContent();
                 } catch (err) {
                     this.logger.error(
                         '=== Failed to retrieve cv result list ===',
                     );
-                    return `Error getting CV result list: ${err.message}`;
+                    const text = `Error getting CV result list: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
                 }
             },
         });
         this.toolMap.set(getCvResults.name, getCvResults);
 
-        const getCvResult = new DynamicTool({
+        const getCvResult = new DynamicStructuredTool({
             name: 'get_cv_result_by_id',
             description:
                 'Retrieves a comprehensive CV evaluation report for a specific CV result ID, including detailed feedback and scores.',
-            func: async (id: string) => {
+            schema: GetCvEvalSchema,
+            func: async ({ id }) => {
                 this.logger.log(`=== getting CV result with ID: ${id} ===`);
+                const response = new ToolResponseBuilder();
                 try {
                     const result = await this.cvResultModel
                         .findById(id)
                         .populate(['CV', 'jobDescription'])
                         .exec();
 
-                    return getCvResultParser(result as any);
+                    const text = getCvResultParser(result as any);
+                    response.addTexts(text);
+
+                    return response.getContent();
                 } catch (err) {
                     this.logger.error('Failed to getting cv result: ', err);
-                    return `Error getting CV result: ${err.message}`;
+                    const text = `Error getting CV result: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
                 }
             },
         });
         this.toolMap.set(getCvResult.name, getCvResult);
 
-        const getCvDetail = new DynamicTool({
+        const getCvDetail = new DynamicStructuredTool({
             name: 'get_cv_detail',
             description: `Retrieves specific image pages or sections of a CV document, identified by a cv_detail_id, typically used for visual inspection of CV content.`,
-            func: async (cvDetailId: string) => {
+            schema: GetCvDetailSchema,
+            func: async ({ id: cvDetailId }) => {
                 this.logger.log(
                     `=== getting CV detail with ID: ${cvDetailId} ===`,
                 );
+                const response = new ToolResponseBuilder();
                 try {
                     const result =
                         await this.cvDetailModel.findById(cvDetailId);
 
-                    return getCvDetailParser(result as any);
+                    const { text, image } = getCvDetailParser(result as any);
+                    response.addTexts(text);
+                    if (image) response.addImages(image);
+
+                    return response.getContent();
                 } catch (err) {
                     this.logger.error('Failed to getting cv detail: ', err);
-                    return `Error getting CV result: ${err.message}`;
+                    const text = `Error getting CV result: ${err.message}`;
+                    response.addTexts(text);
+
+                    return response.getContent();
                 }
             },
         });
@@ -467,6 +562,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
         return [
             searchCvVectorStore,
+            searchEvalVectorStore,
             getListJobDescriptions,
             getJobDescription,
             getCvResults,
@@ -475,7 +571,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
         ];
     }
 
-    private initCvCollection() {
+    private async initCvCollection() {
         const host = process.env.CHROMADB_HOST;
         const port = process.env.CHROMADB_PORT;
         const collectionName =
@@ -483,20 +579,23 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
         const apiKey = process.env.CHROMADB_API_KEY;
         if (apiKey)
-            return new Chroma(this.embedding, {
+            return await Chroma.fromExistingCollection(this.embedding, {
                 collectionName,
+                index: this.chroma
             });
 
         if (!host || !port) throw new Error('Chroma DB Env is not set');
 
-        let url = `http://${host}:${port}`;
         return new Chroma(this.embedding, {
             collectionName,
-            url,
+            clientParams: {
+                host,
+                port: +(port || "8000")
+            }
         });
     }
 
-    private initEvalCollection() {
+    private async initEvalCollection() {
         const host = process.env.CHROMADB_HOST;
         const port = process.env.CHROMADB_PORT;
         const collectionName =
@@ -504,17 +603,19 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
         const apiKey = process.env.CHROMADB_API_KEY;
         if (apiKey)
-            return new Chroma(this.embedding, {
-                collectionName,
-            });
-
+            return await Chroma.fromExistingCollection(this.embedding, {
+                index: this.chroma,
+                collectionName
+            })
 
         if (!host || !port) throw new Error('Chroma DB Env is not set');
 
-        let url = `http://${host}:${port}`;
         return new Chroma(this.embedding, {
             collectionName,
-            url,
+            clientParams: {
+                host,
+                port: +(port || "8000")
+            }
         });
     }
 }

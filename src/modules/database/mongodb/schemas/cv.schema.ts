@@ -43,3 +43,4 @@ export class CV extends Document {
 }
 
 export const CVSchema = SchemaFactory.createForClass(CV);
+CVSchema.index({ cv_filename: 1, project_filename: 1 });

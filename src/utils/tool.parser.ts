@@ -39,13 +39,13 @@ export function getJobParser(result: JobDescription | null): string {
 }
 
 export function getCvResultsParser(results: Partial<CVResult>[]): string {
-    if (!results || results.length === 0) {
+    if (!results || !results.length) {
         return 'No CV results found.';
     }
     return results
         .map(
             (cvResult, index) =>
-                `CV Result ${index + 1}:\nID: ${cvResult._id}\nStatus: ${cvResult.status}\nCandidate Name: ${cvResult.CV?.cv_filename}`,
+                `CV Result ${index + 1}:\nID: ${cvResult._id}\nStatus: ${cvResult.status}\nCandidate Name: ${cvResult.CV?.cv_filename}\nJob Title: ${cvResult.jobDescription?.title}`,
         )
         .join('\n---\n');
 }
@@ -54,14 +54,17 @@ export function getCvResultParser(result?: CVResult): string {
     if (!result) {
         return 'CV result not found.';
     }
-    return `CV Result ID: ${result._id}\nStatus: ${result.status}\nCV Match Rate: ${result.cv_match_rate || 'N/A'}\nCV Feedback: ${result.cv_feedback || 'N/A'}\nProject Score: ${result.project_score || 'N/A'}\nProject Feedback: ${result.project_feedback || 'N/A'}\nOverall Score: ${result.overall_score || 'N/A'}\nOverall Summary: ${result.overall_summary || 'N/A'}\nJob Title: ${result.jobDescription?.title || 'N/A'}\nCV Filename: ${result.CV?.cv_filename || 'N/A'}\nCreated At: ${result.created_at}\nUpdated At: ${result.updated_at}\n`;
+    return `CV Result ID: ${result._id}\nStatus: ${result.status}\nCV Match Rate: ${result.cv_match_rate || 'N/A'}\nCV Feedback: ${result.cv_feedback || 'N/A'}\nProject Score: ${result.project_score || 'N/A'}\nProject Feedback: ${result.project_feedback || 'N/A'}\nOverall Score: ${result.overall_score || 'N/A'}\nOverall Summary: ${result.overall_summary || 'N/A'}\nJob ID: ${result.jobDescription?._id || 'N/A'}\nJob Title: ${result.jobDescription?.title || 'N/A'}\nCV ID:${result.CV?._id || 'N/A'}\nCV Filename: ${result.CV?.cv_filename || 'N/A'}\nCreated At: ${result.created_at}\nUpdated At: ${result.updated_at}\n`;
 }
 
-export function getCvDetailParser(result?: CVDetail): string {
-    if (!result) return 'CV details not found';
+export function getCvDetailParser(result?: CVDetail): { text: string, image?: string } {
+    if (!result) return { text: 'CV details not found' };
 
-    return `page ${result.page}:
+    const text = `page ${result.page}:
     texts: ${result.texts.join('\n') || 'N/A'}
     created_at: ${result.created_at}
     updated_at: ${result.updated_at}`;
+    const image = result.base64_image;
+
+    return { text, image };
 }
