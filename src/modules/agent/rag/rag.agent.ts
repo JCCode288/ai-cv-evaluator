@@ -604,6 +604,7 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
                 collectionName
             })
 
+
         if (!host || !port) throw new Error('Chroma DB Env is not set');
 
         return new Chroma(this.embedding, {
