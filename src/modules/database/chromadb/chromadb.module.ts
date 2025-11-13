@@ -6,16 +6,17 @@ import { ChromaClient, CloudClient } from 'chromadb';
     {
       provide: ChromaClient,
       useFactory: () => {
-        const apiKey = process.env.CHROMA_API_KEY;
-        const tenant = process.env.CHROMA_TENANT;
-        const database = process.env.CHROMA_DATABASE;
+        const apiKey = process.env.CHROMADB_API_KEY;
+        const tenant = process.env.CHROMADB_TENANT;
+        const database = process.env.CHROMADB_DATABASE;
 
-        if (apiKey && tenant && database)
+        if (apiKey && tenant && database) {
           return new CloudClient({
             apiKey,
             tenant,
             database
           });
+        }
 
         return new ChromaClient({
           host: process.env.CHROMADB_HOST ?? 'localhost',
@@ -26,13 +27,4 @@ import { ChromaClient, CloudClient } from 'chromadb';
   ],
   exports: [ChromaClient],
 })
-export class ChromaDbModule {
-  constructor(private readonly chromaDb: ChromaClient) { }
-
-  async onModuleInit() {
-    //   await Promise.all([
-    //     this.chromaDb.deleteCollection({ name: process.env.CHROMA_COLLECTION_NAME ?? "cv_collection" }),
-    //     this.chromaDb.deleteCollection({ name: process.env.CHROMA_RAG_COLLECTION_NAME ?? 'rag_collection' })
-    //   ]);
-  }
-}
+export class ChromaDbModule { }
