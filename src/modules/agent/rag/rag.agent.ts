@@ -96,10 +96,6 @@ export class RagAgent implements AgentStrategy, OnModuleInit {
 
         this.cvCollection = await this.initCvCollection();
         this.evalCollection = await this.initEvalCollection();
-
-        this.cvCollection.similaritySearch("yahallo")
-            .then(res => console.log({ res }));
-
     }
 
     async chat(input: RagInput): Promise<string> {
